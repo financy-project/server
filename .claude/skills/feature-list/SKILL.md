@@ -19,7 +19,7 @@ List all features and their status.
 
 1. Scans `docs/features/` for all `PM-NNN-*` directories (skipping `_templates/`)
 2. Reads `tasks.md`/`test-cases.md` from each feature to compute completion %
-3. Shows this repository's matching GitHub issue status (open/closed), if `gh` is available and a remote is configured
+3. Shows the matching GitHub issue status (open/closed) from the dedicated tracking repo (`financy-project/features`), if `gh` is authenticated: `gh issue list -R financy-project/features --search "$PM_NUM" --state all`
 4. Displays feature details in a table
 
 ## Output

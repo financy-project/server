@@ -9,7 +9,7 @@ type: utility
 
 Create a new feature with PM-NNN numbering (PM-001, PM-002, ...), with optional GitHub integration.
 
-> Unlike the sibling REST project this workflow was adapted from, this repo has **no separate centralized `features` repository** — milestones and issues are created in **this repository** by default. If your team later sets up a dedicated tracking repo, update the `-R` target in `feature-new.sh` (and the other `feature-*` scripts) accordingly.
+> Like the sibling REST project this workflow was adapted from, features are tracked centrally in the dedicated **[financy-project/features](https://github.com/financy-project/features)** repository — issues and milestones for every project in the org (server, client, ...) live there, sharing a single PM-NNN sequence. The `spec.md`/`plan.md`/`tasks.md` files still live locally in each project's `docs/features/`, next to the code that implements them. The tracking repo is hardcoded as `TRACKING_REPO` at the top of `feature-new.sh` (and referenced the same way in `feature-plan` and `feature-task`).
 
 ## Usage
 
@@ -21,11 +21,11 @@ Create a new feature with PM-NNN numbering (PM-001, PM-002, ...), with optional 
 
 ## What it does
 
-1. Finds next available PM number by scanning `docs/features/` locally, and this repository's GitHub issues if a remote is configured
-2. Creates `docs/features/PM-NNN-slug/` with `spec.md` and `plan.md`
+1. Finds next available PM number by scanning `docs/features/` locally, and the `financy-project/features` repo's GitHub issues if `gh` is authenticated
+2. Creates `docs/features/PM-NNN-slug/` with `spec.md` and `plan.md` in **this** repository
 3. If `--milestone` provided and `gh` is configured:
-   - Creates a GitHub milestone in this repository if it doesn't exist
-   - Creates a GitHub issue linked to the milestone
+   - Creates a GitHub milestone in `financy-project/features` if it doesn't exist
+   - Creates a GitHub issue there, linked to the milestone, pointing back at this repo/branch/files
 4. Creates git branch: `PM-NNN/slug`
 
 ## Example
@@ -34,15 +34,15 @@ Create a new feature with PM-NNN numbering (PM-001, PM-002, ...), with optional 
 /feature-new "Transaction Categorization" --milestone "v1.0"
 
 # Creates:
-#   docs/features/PM-001-transaction-categorization/
+#   docs/features/PM-001-transaction-categorization/   (in this repo)
 #   ├── spec.md
 #   ├── plan.md
 #
-# GitHub (if gh is configured):
+# GitHub (in financy-project/features, if gh is configured):
 #   - Milestone: "v1.0" (if not exists)
 #   - Issue: "PM-001: Transaction Categorization" (linked to milestone)
 #
-# Git: branch PM-001/transaction-categorization checked out
+# Git: branch PM-001/transaction-categorization checked out (in this repo)
 ```
 
 ## Next Steps

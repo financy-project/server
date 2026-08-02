@@ -57,13 +57,13 @@ Write the implementation plan for a feature by clarifying requirements with gril
    - **While writing the Implementation Phases section:** every bullet must be traceable to a Blueprint above and carry its exact file path, exact symbol/signature or field list, and exact test cases inline.
    - **While writing the Test Cases section:** use the exact same `### Phase N: <name>` headings as Implementation Phases.
    - **After writing:** Verify every blueprint has the required sub-fields per the DoR, verify every Implementation Phases bullet meets the granularity bar, and verify the Test Cases section's phase headings match Implementation Phases exactly.
-3. If a GitHub remote is configured and `gh` is authenticated, locate the corresponding issue by searching for the feature ID:
+3. If `gh` is authenticated, locate the corresponding issue in the dedicated tracking repo (`financy-project/features`) by searching for the feature ID:
    ```bash
-   ISSUE_NUMBER=$(gh issue list --search "$FEATURE_ID" --state all --json number --jq '.[0].number')
+   ISSUE_NUMBER=$(gh issue list -R financy-project/features --search "$FEATURE_ID" --state all --json number --jq '.[0].number')
    ```
 4. If found, post the content of `plan.md` as a comment on that issue:
    ```bash
-   gh issue comment "$ISSUE_NUMBER" --body-file "docs/features/$FEATURE_DIR/plan.md"
+   gh issue comment "$ISSUE_NUMBER" -R financy-project/features --body-file "docs/features/$FEATURE_DIR/plan.md"
    ```
 5. Confirm to the user that the plan has been saved, and whether the GitHub comment step ran or was skipped.
 

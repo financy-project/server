@@ -267,10 +267,10 @@ Features are driven by specifications, not tickets. All feature work must align 
 ### Workflow
 
 1. **`/feature-new "Feature Name"`** — Create a new feature with PM-NNN numbering
-   - Numbers itself off this repository's own GitHub issues (or `docs/features/` locally if no remote/gh)
-   - Creates `docs/features/PM-NNN-slug/` with `spec.md` and `plan.md`
+   - Numbers itself off the dedicated [financy-project/features](https://github.com/financy-project/features) repo's GitHub issues (or `docs/features/` locally if no remote/gh) — the PM-NNN sequence is shared across every project in the org
+   - Creates `docs/features/PM-NNN-slug/` with `spec.md` and `plan.md` **in this repo**
    - Creates git branch `PM-NNN/slug`
-   - Optionally creates a GitHub milestone + issue in this repo with `--milestone "v1.0"`
+   - Optionally creates a GitHub milestone + issue **in `financy-project/features`** with `--milestone "v1.0"`, linked back to this repo/branch/files
 
 2. **Fill `spec.md`** — Write requirements and acceptance criteria (user story format), or use the `product-owner` agent to collaborate on it
 
@@ -294,7 +294,7 @@ Features are driven by specifications, not tickets. All feature work must align 
 - **Constitution alignment** — All plans and tasks must respect [constitution.md](constitution.md)
 - **Planning is comprehensive** — Cover all applicable planning areas in `plan.md`, explicitly marking any as "Not Applicable" rather than omitting them silently
 - **Tasks are granular** — Backend tasks cover every layer (entity, use-case, resolver, mapper, loader if relational) plus error handling, migrations, logging, monitoring
-- **No separate tracking repo** — unlike the sibling REST project this workflow was adapted from, issues/milestones live in _this_ repository, not a dedicated `features` repo
+- **Dedicated tracking repo** — like the sibling REST project this workflow was adapted from, issues/milestones live in the centralized [financy-project/features](https://github.com/financy-project/features) repo, shared across `server`, `client`, and any future project in the org. Only `spec.md`/`plan.md`/`tasks.md` stay local, in `docs/features/` of the repo that implements the feature.
 
 ### Skills Reference
 

@@ -8,6 +8,7 @@ fi
 
 FEATURE_NAME="$1"
 MILESTONE=""
+TRACKING_REPO="financy-project/features"
 
 # Parse optional --milestone flag
 if [ $# -ge 3 ] && [ "$2" = "--milestone" ]; then
@@ -16,12 +17,13 @@ fi
 
 FEATURE_SLUG=$(echo "$FEATURE_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-\|-$//')
 
-# Find next number: prefer this repo's own GitHub issues if `gh` + a remote
-# are available, otherwise fall back to scanning docs/features/ locally.
-# Unlike the sibling REST project this workflow was adapted from, there is
-# no separate centralized "features" repo here -- issues live in this repo.
-echo "Checking this repository's issues for the next PM-NNN number..."
-MAX_NUM=$(gh issue list --limit 100 --state all --json title --jq '.[].title' 2>/dev/null | grep -oE 'PM-[0-9]+' | cut -d'-' -f2 | sort -n | tail -n1 || echo "")
+# Find next number: prefer the dedicated features repo's GitHub issues if
+# `gh` + auth are available, otherwise fall back to scanning docs/features/
+# locally. Issues/milestones for ALL projects in the org (server, client,
+# ...) are centralized in $TRACKING_REPO -- this repo only keeps the
+# spec.md/plan.md/tasks.md files.
+echo "Checking $TRACKING_REPO issues for the next PM-NNN number..."
+MAX_NUM=$(gh issue list -R "$TRACKING_REPO" --limit 100 --state all --json title --jq '.[].title' 2>/dev/null | grep -oE 'PM-[0-9]+' | cut -d'-' -f2 | sort -n | tail -n1 || echo "")
 
 if [ -z "$MAX_NUM" ]; then
   echo "No GitHub issues found with PM-NNN (or gh/remote unavailable). Checking local directory..."
@@ -89,8 +91,13 @@ EOF
 
 echo "✓ Spec created with your details"
 
-# GitHub issue creation arguments (targets THIS repository, no -R)
+# Source repo (this repo) as owner/name, used to point the tracking issue
+# back at the spec/plan files that live here rather than in $TRACKING_REPO.
+SOURCE_REPO=$(gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null || echo "")
+
+# GitHub issue creation arguments (targets the dedicated $TRACKING_REPO)
 GH_ISSUE_ARGS=(
+  "-R" "$TRACKING_REPO"
   "--title" "$FEATURE_ID: $FEATURE_NAME"
   "--body" "## Description
 $DESCRIPTION
@@ -103,17 +110,18 @@ $FORMATTED_CRITERIA
 
 ---
 ## Files
-- **Specification**: [$FEATURE_DIR/spec.md]($FEATURE_DIR/spec.md)
-- **Plan**: [$FEATURE_DIR/plan.md]($FEATURE_DIR/plan.md)"
+Source repo: \`${SOURCE_REPO:-<this repo>}\`, branch \`$FEATURE_ID/$FEATURE_SLUG\`
+- **Specification**: \`$FEATURE_DIR/spec.md\`
+- **Plan**: \`$FEATURE_DIR/plan.md\`"
 )
 
 # Handle Milestone
 if [ -n "$MILESTONE" ]; then
-  echo "Checking/creating GitHub milestone: $MILESTONE"
-  MILESTONE_ID=$(gh api repos/:owner/:repo/milestones --jq ".[] | select(.title == \"$MILESTONE\") | .number" 2>/dev/null || echo "")
+  echo "Checking/creating GitHub milestone: $MILESTONE (in $TRACKING_REPO)"
+  MILESTONE_ID=$(gh api "repos/$TRACKING_REPO/milestones" --jq ".[] | select(.title == \"$MILESTONE\") | .number" 2>/dev/null || echo "")
 
   if [ -z "$MILESTONE_ID" ]; then
-    MILESTONE_ID=$(gh api repos/:owner/:repo/milestones -f title="$MILESTONE" -f description="Milestone for $FEATURE_NAME" --jq '.number' 2>/dev/null || echo "")
+    MILESTONE_ID=$(gh api "repos/$TRACKING_REPO/milestones" -f title="$MILESTONE" -f description="Milestone for $FEATURE_NAME" --jq '.number' 2>/dev/null || echo "")
   fi
 
   if [ -n "$MILESTONE_ID" ]; then
@@ -124,9 +132,10 @@ if [ -n "$MILESTONE" ]; then
   fi
 fi
 
-# Attempt to create the GitHub issue in this repository (best-effort — a
-# missing remote or unauthenticated gh should not block local feature setup)
-echo "Creating GitHub issue: $FEATURE_ID: $FEATURE_NAME"
+# Attempt to create the GitHub issue in the dedicated tracking repo
+# (best-effort — a missing remote or unauthenticated gh should not block
+# local feature setup)
+echo "Creating GitHub issue in $TRACKING_REPO: $FEATURE_ID: $FEATURE_NAME"
 
 if ISSUE_URL=$(gh issue create "${GH_ISSUE_ARGS[@]}" 2>&1); then
   echo "✓ GitHub issue created: $ISSUE_URL"

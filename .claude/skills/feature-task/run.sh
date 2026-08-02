@@ -195,12 +195,14 @@ if [ -d "$PHASES_DIR" ]; then
   fi
 fi
 
-# Best-effort: comment test-cases.md on the matching GitHub issue in THIS
-# repository, if one exists and gh is available. Never blocks the script.
+# Best-effort: comment test-cases.md on the matching GitHub issue in the
+# dedicated tracking repo (financy-project/features), if one exists and gh
+# is available. Never blocks the script.
+TRACKING_REPO="financy-project/features"
 if [ "$TOTAL_TEST_CASES" -gt 0 ]; then
-  ISSUE_NUMBER=$(gh issue list --search "$PM_NUM" --state all --json number --jq '.[0].number' 2>/dev/null || echo "")
+  ISSUE_NUMBER=$(gh issue list -R "$TRACKING_REPO" --search "$PM_NUM" --state all --json number --jq '.[0].number' 2>/dev/null || echo "")
   if [ -n "$ISSUE_NUMBER" ]; then
-    if gh issue comment "$ISSUE_NUMBER" --body-file "$TEST_CASES_FILE" >/dev/null 2>&1; then
+    if gh issue comment "$ISSUE_NUMBER" -R "$TRACKING_REPO" --body-file "$TEST_CASES_FILE" >/dev/null 2>&1; then
       echo "✅ Posted test-cases.md to issue #$ISSUE_NUMBER"
     else
       echo "⚠️  Failed to post test-cases.md comment (issue #$ISSUE_NUMBER) — post it manually if needed"
