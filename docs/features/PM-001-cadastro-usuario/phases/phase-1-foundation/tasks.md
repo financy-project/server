@@ -1,6 +1,6 @@
 ## Phase 1: Foundation
 
-- [ ] B-001: Scaffold module skeletons: `node scripts/scaffold-module.js user` and `node scripts/scaffold-module.js auth`
+- [x] B-001: Scaffold module skeletons: `node scripts/scaffold-module.js user` and `node scripts/scaffold-module.js auth`
 - [ ] B-002: Add `User` and `Auth` models to `prisma/schema.prisma`:
   ```prisma
   model User {

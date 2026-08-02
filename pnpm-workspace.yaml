@@ -1,0 +1,11 @@
+allowBuilds:
+  '@apollo/protobufjs': set this to true or false
+  '@prisma/engines': set this to true or false
+  prisma: set this to true or false
+  unrs-resolver: set this to true or false
+onlyBuiltDependencies:
+  - '@apollo/protobufjs'
+  - '@prisma/client'
+  - '@prisma/engines'
+  - prisma
+  - unrs-resolver
