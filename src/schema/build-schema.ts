@@ -1,10 +1,11 @@
 import { buildSchema } from 'type-graphql'
 import type { GraphQLSchema } from 'graphql'
 import { HealthResolver } from '@/modules/health'
+import { UserResolver } from '@/modules/user'
 
 export const buildAppSchema = (): Promise<GraphQLSchema> =>
   buildSchema({
-    resolvers: [HealthResolver],
+    resolvers: [HealthResolver, UserResolver],
     // Input validation is handled explicitly by validateInput() (see
     // docs/architecture/05-validation.md), not TypeGraphQL's automatic pass.
     validate: false,
