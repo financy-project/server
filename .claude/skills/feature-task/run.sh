@@ -69,9 +69,12 @@ extract_section() {
     counter++
     next
   }
-  in_section && in_phase && /^$/ {
-    print ""
-    in_phase = 0
+  in_section {
+    # Continuation lines belonging to the current bullet (code fences,
+    # indented detail, blank separators) — copied verbatim so a task with
+    # an embedded code block (e.g. a Prisma schema snippet) is not silently
+    # truncated to just its first line.
+    print
     next
   }
   ' "$PLAN_FILE"
