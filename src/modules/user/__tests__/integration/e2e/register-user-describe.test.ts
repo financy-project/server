@@ -1,15 +1,16 @@
 import 'reflect-metadata'
-import { ApolloServer } from '@apollo/server'
-import { buildAppSchema } from '@/schema/build-schema'
+import type { ApolloServer } from '@apollo/server'
+import type { GraphQLContext } from '@/context/create-context'
+import { buildApolloServer } from '@/app'
 import { useDatabase } from '@/test/helpers/db'
 
 describe('registerUser mutation (e2e)', () => {
   useDatabase()
 
-  let server: ApolloServer
+  let server: ApolloServer<GraphQLContext>
 
   beforeAll(async () => {
-    server = new ApolloServer({ schema: await buildAppSchema() })
+    server = await buildApolloServer()
   })
 
   afterAll(async () => {
