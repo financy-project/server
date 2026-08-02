@@ -26,17 +26,18 @@ pnpm test --testPathPatterns=e2e
 
 ### Database (Docker Compose)
 
-Three isolated environments, matching `docker-compose.dev.yml` / `docker-compose.integration.yml` / `docker-compose.e2e.yml`:
+Three isolated environments, matching `docker-compose.dev.yml` / `docker-compose.integration.yml` / `docker-compose.e2e.yml`. **You don't need to start these manually** — `pnpm dev`, `pnpm test:integration`, and `pnpm test:e2e` each run a `pre*` script (`predev`, `pretest:integration`, `pretest:e2e`) that brings up their container automatically via `docker compose up -d --wait`, blocking until Postgres reports healthy before the actual command runs. This is pnpm's standard pre/post script convention — no extra tooling involved.
 
 ```bash
-# Local development — Postgres with a persistent named volume (data survives restarts)
-docker compose -f docker-compose.dev.yml up -d
+# Manual control, if you want it — idempotent, safe to run anytime:
+pnpm docker:dev              # Local development — persistent named volume (data survives restarts)
+pnpm docker:integration       # Integration tests — tmpfs (volatile, wiped on container stop)
+pnpm docker:e2e               # E2E tests — tmpfs (volatile, wiped on container stop)
 
-# Integration tests — Postgres on tmpfs (volatile, wiped on container stop)
-docker compose -f docker-compose.integration.yml up -d
-
-# E2E tests — Postgres on tmpfs (volatile, wiped on container stop)
-docker compose -f docker-compose.e2e.yml up -d
+# Tear down when you want a truly clean slate (dev's volume is removed with the container):
+pnpm docker:dev:down
+pnpm docker:integration:down
+pnpm docker:e2e:down
 ```
 
 Each environment has its own container name, port, and database name (see the compose files) so all three can run simultaneously without colliding.
@@ -44,10 +45,11 @@ Each environment has its own container name, port, and database name (see the co
 ### Prisma
 
 ```bash
-pnpm prisma generate         # Generate Prisma Client after schema changes
-pnpm prisma migrate dev      # Create and apply a new migration (dev database)
-pnpm prisma migrate deploy   # Apply existing migrations (integration/e2e/CI — never generates new ones)
-pnpm prisma studio           # Open Prisma Studio against the dev database
+pnpm prisma:generate                        # Generate Prisma Client after schema changes
+pnpm prisma:migrate:dev                     # Create and apply a new migration (dev database)
+pnpm prisma:migrate:deploy:integration       # Apply existing migrations (integration — never generates new ones)
+pnpm prisma:migrate:deploy:e2e               # Apply existing migrations (e2e — never generates new ones)
+pnpm prisma:studio                          # Open Prisma Studio against the dev database
 ```
 
 ## Writing Tests
