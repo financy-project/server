@@ -1,0 +1,19 @@
+name: financy-e2e
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: financy-postgres-e2e
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: financy_e2e
+    ports:
+      - '5534:5432'
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5

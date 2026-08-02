@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Env files (never commit real secrets — .env.example is the only tracked template)
+.env
+.env.local
+.env.*.local
+
+# Prisma
+prisma/generated/
+
+# Testing
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE / OS
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Feature workflow scratch output
+docs/features/PM-*/phase-*-output.log

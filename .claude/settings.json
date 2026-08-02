@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit(*)",
+      "Write(*)",
+      "Bash(npm *)",
+      "Bash(pnpm *)",
+      "Bash(git *)",
+      "Bash(gh *)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(ls *)",
+      "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+      "TaskUpdate",
+      "TaskCreate"
+    ],
+    "ask": [
+      "Edit(.claude/*)",
+      "Edit(.git/*)",
+      "Bash(rm*claude*)",
+      "Bash(rm*.git*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm format && pnpm eslint --fix src",
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}

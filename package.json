@@ -1,0 +1,79 @@
+{
+  "name": "financy-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Financy backend — GraphQL API (Apollo Server + TypeGraphQL + Prisma)",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "dotenv -e .env.dev -- nodemon",
+    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
+    "start": "node dist/server.js",
+    "test": "dotenv -e .env.test -- jest",
+    "test:watch": "dotenv -e .env.test -- jest --watch",
+    "test:integration": "dotenv -e .env.integration -- jest --testPathPatterns=integration/repository",
+    "test:e2e": "dotenv -e .env.e2e -- jest --testPathPatterns=integration/e2e",
+    "scaffold": "node scripts/scaffold-module.js",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prisma:generate": "dotenv -e .env.dev -- prisma generate",
+    "prisma:migrate:dev": "dotenv -e .env.dev -- prisma migrate dev",
+    "prisma:migrate:deploy:integration": "dotenv -e .env.integration -- prisma migrate deploy",
+    "prisma:migrate:deploy:e2e": "dotenv -e .env.e2e -- prisma migrate deploy",
+    "prisma:studio": "dotenv -e .env.dev -- prisma studio",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@apollo/server": "^5.5.1",
+    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/client": "^7.9.1",
+    "bcryptjs": "^3.0.3",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "dataloader": "^2.2.3",
+    "graphql": "^16.12.0",
+    "graphql-depth-limit": "^1.1.0",
+    "graphql-query-complexity": "^2.0.0",
+    "graphql-scalars": "^1.25.0",
+    "reflect-metadata": "^0.2.2",
+    "type-graphql": "2.0.0-rc.4",
+    "uuidv7": "^1.2.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/graphql-depth-limit": "^1.1.6",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.20.0",
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
+    "dotenv-cli": "^11.0.0",
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.8.0",
+    "husky": "^9.1.7",
+    "jest": "^30.4.2",
+    "nodemon": "^3.1.14",
+    "prettier": "^3.9.6",
+    "prisma": "^7.9.1",
+    "tsc-alias": "^1.9.1",
+    "tsconfig-paths": "^4.2.0",
+    "ts-jest": "^29.4.12",
+    "ts-node": "^10.9.2",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.65.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@apollo/protobufjs",
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "unrs-resolver"
+    ]
+  }
+}

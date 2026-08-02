@@ -1,0 +1,12 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// No domain models yet — this is the skeleton commit. Add models here as
+// features are implemented; each model backs one module's entity/repository
+// per docs/architecture/03-repository.md. Run `pnpm prisma:migrate:dev`
+// after adding a model.
