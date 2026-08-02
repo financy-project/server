@@ -7,4 +7,10 @@ export class HealthStatusType {
 
   @Field(() => Float)
   uptime!: number
+
+  @Field()
+  connected!: boolean
+
+  @Field()
+  version!: string
 }

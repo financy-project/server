@@ -1,8 +1,12 @@
 import 'reflect-metadata'
 import { ApolloServer } from '@apollo/server'
 import { buildAppSchema } from '@/schema/build-schema'
+import { getAppVersion } from '@/config/app-version'
+import { useDatabase } from '@/test/helpers/db'
 
 describe('health query (e2e)', () => {
+  useDatabase()
+
   let server: ApolloServer
 
   beforeAll(async () => {
@@ -13,11 +17,11 @@ describe('health query (e2e)', () => {
     await server.stop()
   })
 
-  it('returns status ok', async () => {
+  it('returns connected: true and the server version when the database is reachable', async () => {
     const response = await server.executeOperation({
       query: `
         query Health {
-          health { status uptime }
+          health { status uptime connected version }
         }
       `,
     })
@@ -27,6 +31,8 @@ describe('health query (e2e)', () => {
     expect(response.body.singleResult.errors).toBeUndefined()
     expect(response.body.singleResult.data?.['health']).toMatchObject({
       status: 'ok',
+      connected: true,
+      version: getAppVersion(),
     })
   })
 })

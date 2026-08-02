@@ -6,7 +6,7 @@ import { GetHealthUseCase } from '../use-cases/get-health.use-case'
 @Resolver(() => HealthStatusType)
 export class HealthResolver {
   @Query(() => HealthStatusType)
-  health(): HealthStatusType {
-    return toHealthStatusType(GetHealthUseCase.getHealth())
+  async health(): Promise<HealthStatusType> {
+    return toHealthStatusType(await GetHealthUseCase.getHealth())
   }
 }

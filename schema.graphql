@@ -4,8 +4,10 @@
 # -----------------------------------------------
 
 type HealthStatusType {
+  connected: Boolean!
   status: String!
   uptime: Float!
+  version: String!
 }
 
 type Query {
