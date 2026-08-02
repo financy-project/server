@@ -2,8 +2,7 @@
 // Only export: entity, types, enums, errors, repository, resolver.
 // NEVER export: use-cases, validation wrappers, mappers, ports, adapters, gateways, loaders.
 
-export {} // export { User } from './entity'
-// export type { UserProps } from './types'
-// export { UserRepository } from './repository'
-// export { UserNotFoundError } from './errors'
-// export { UserResolver } from './resolvers'
+export { User } from './entity/user.entity'
+export type { UserProps, CreateUserProps } from './entity/user.entity'
+export { UserRepository } from './repository'
+export { UserAlreadyExistsError } from './errors/user-errors'

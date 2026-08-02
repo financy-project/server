@@ -1,1 +1,1 @@
-export {} // export { CreateUserValidation } from './create-user.validation'
+export { RegisterUserValidation } from './register-user.validation'
