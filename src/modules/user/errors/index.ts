@@ -1,1 +1,1 @@
-export {} // export { UserNotFoundError } from './user-errors'
+export { UserAlreadyExistsError } from './user-errors'
