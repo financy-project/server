@@ -1,1 +1,1 @@
-export {} // export { UserType } from './user.object-type'
+export { UserType } from './user.object-type'

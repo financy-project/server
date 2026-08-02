@@ -1,1 +1,1 @@
-export {} // export { toUserType } from './user.mapper'
+export { toUserType } from './user.mapper'
