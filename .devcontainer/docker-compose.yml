@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    container_name: financy-server-dev
+    ports:
+      - '4000:4000'
+    volumes:
+      # Código fonte (desenvolvimento)
+      - ..:/workspace
+      # Credenciais e config (persistem entre restarts)
+      - ~/.ssh:/root/.ssh:ro
+      - ~/.gitconfig:/root/.gitconfig:ro
+      - ~/.git-credentials:/root/.git-credentials:ro
+      - ~/.claude:/root/.claude
+      # Cache de dependências (npm/pnpm)
+      - node_modules_cache:/workspace/node_modules
+      - pnpm_cache:/root/.pnpm-store
+      - npm_cache:/root/.npm
+      # Cache do sistema
+      - home_cache:/root/.cache
+    environment:
+      NODE_ENV: development
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+
+volumes:
+  node_modules_cache:
+  pnpm_cache:
+  npm_cache:
+  home_cache:
