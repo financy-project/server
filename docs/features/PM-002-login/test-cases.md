@@ -24,10 +24,10 @@ Generated verbatim from `plan.md`'s `## Test Cases`. See `phases/phase-N-slug/te
 - [x] T-015: `createContext` no cookie header → `currentUser: null`
 - [x] T-016: `createContext` valid `access_token` cookie → `currentUser: { id }`
 - [x] T-017: `createContext` invalid/expired `access_token` cookie → `currentUser: null`
-- [ ] T-018: `login` mutation happy path → returns `{ id, email, name }`, no errors, `cookies.set` called with `access_token` + `httpOnly: true`
-- [ ] T-019: `login` mutation wrong password → `extensions.code: 'UNAUTHENTICATED'`
-- [ ] T-020: `login` mutation unknown email → `extensions.code: 'UNAUTHENTICATED'` (identical to wrong-password case)
-- [ ] T-021: `login` mutation malformed input → `extensions.code: 'BAD_USER_INPUT'`
+- [x] T-018: `login` mutation happy path → returns `{ id, email, name }`, no errors, `cookies.set` called with `access_token` + `httpOnly: true`
+- [x] T-019: `login` mutation wrong password → `extensions.code: 'UNAUTHENTICATED'`
+- [x] T-020: `login` mutation unknown email → `extensions.code: 'UNAUTHENTICATED'` (identical to wrong-password case)
+- [x] T-021: `login` mutation malformed input → `extensions.code: 'BAD_USER_INPUT'`
 
 ## Phase 3: Polish
 
