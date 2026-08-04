@@ -1,1 +1,1 @@
-export {} // export { toAuthType } from './auth.mapper'
+export { toAuthenticatedUserType } from './auth.mapper'
