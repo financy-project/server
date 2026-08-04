@@ -1,1 +1,1 @@
-export {} // export { AuthNotFoundError } from './auth-errors'
+export { InvalidCredentialsError } from './auth-errors'
