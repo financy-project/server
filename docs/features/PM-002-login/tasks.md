@@ -17,7 +17,7 @@ Generated verbatim from `plan.md`'s `## Implementation Phases`. See `phases/phas
 
 ## Phase 2: Features
 
-- [ ] B-011: Implement `InvalidCredentialsError` (`src/modules/auth/errors/auth-errors.ts`) extending `DomainError` with code `UNAUTHENTICATED` and message `errors.invalid_credentials`; update `src/modules/auth/errors/index.ts` barrel
+- [x] B-011: Implement `InvalidCredentialsError` (`src/modules/auth/errors/auth-errors.ts`) extending `DomainError` with code `UNAUTHENTICATED` and message `errors.invalid_credentials`; update `src/modules/auth/errors/index.ts` barrel
 - [ ] B-012: Add i18n keys to `src/services/i18n.service.ts`: `errors.invalid_credentials` (en: "Invalid email or password", pt-br: "E-mail ou senha inválidos"), `validations.password_required` (en: "Password is required", pt-br: "A senha é obrigatória")
 - [ ] B-013: Implement `LoginInput` (`src/modules/auth/graphql/input-types/login.input.ts`) per the GraphQL Blueprint field list; update `src/modules/auth/graphql/input-types/index.ts` barrel
 - [ ] B-014: Implement `LoginValidation.validate(input: LoginInput): Promise<LoginInput>` (`src/modules/auth/validation/login.validation.ts`), calling `validateInput(LoginInput, input)`; update `src/modules/auth/validation/index.ts` barrel
