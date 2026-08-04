@@ -18,9 +18,9 @@ Generated verbatim from `plan.md`'s `## Test Cases`. See `phases/phase-N-slug/te
 - [x] T-009: `LoginInput` valid email + non-empty password passes validation
 - [x] T-010: `LoginInput` invalid email format → `validations.email`
 - [x] T-011: `LoginInput` empty password → `validations.password_required`
-- [ ] T-012: `LoginUseCase.login` unknown email → throws `InvalidCredentialsError`, still invokes `HashService.compare` (timing-safe branch)
-- [ ] T-013: `LoginUseCase.login` known email + wrong password → throws `InvalidCredentialsError`
-- [ ] T-014: `LoginUseCase.login` known email + correct password → returns `{ user, token }`, calls `JwtService.sign({ sub: user.id })`
+- [x] T-012: `LoginUseCase.login` unknown email → throws `InvalidCredentialsError`, still invokes `HashService.compare` (timing-safe branch)
+- [x] T-013: `LoginUseCase.login` known email + wrong password → throws `InvalidCredentialsError`
+- [x] T-014: `LoginUseCase.login` known email + correct password → returns `{ user, token }`, calls `JwtService.sign({ sub: user.id })`
 - [ ] T-015: `createContext` no cookie header → `currentUser: null`
 - [ ] T-016: `createContext` valid `access_token` cookie → `currentUser: { id }`
 - [ ] T-017: `createContext` invalid/expired `access_token` cookie → `currentUser: null`
