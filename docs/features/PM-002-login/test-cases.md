@@ -32,4 +32,4 @@ Generated verbatim from `plan.md`'s `## Test Cases`. See `phases/phase-N-slug/te
 ## Phase 3: Polish
 
 - [x] T-022: `schema.graphql` diff reviewed and committed
-- [ ] T-023: No password or token value appears in any log statement touched by this feature
+- [x] T-023: No password or token value appears in any log statement touched by this feature
