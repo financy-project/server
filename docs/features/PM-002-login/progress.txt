@@ -29,3 +29,9 @@
   - [ ] B-023: Unit tests for `LoginUseCase` (`src/modules/auth/__tests__/unit/use-cases/login-describe.test.ts`, mocked `FindUserWithAuthByEmailRepository`/`HashService`/`JwtService`): unknown email → throws `InvalidCredentialsError` and still calls `HashService.compare`; known email + wrong password → throws `InvalidCredentialsError`; known email + correct password → returns `{ user, token }` and calls `JwtService.sign` with `{ sub: user.id }`
   - [ ] B-024: Unit tests for `createContext` (`src/context/__tests__/unit/create-context-describe.test.ts`): no `cookie` header → `currentUser: null`; valid `access_token` cookie (signed via `JwtService.sign`) → `currentUser: { id: sub }`; invalid/expired token → `currentUser: null`
   - [ ] B-025: E2E tests for `login` mutation (`src/modules/auth/__tests__/integration/e2e/login-describe.test.ts`, using `useDatabase()` + `buildApolloServer()`, seeding a user via `registerUser` first): happy path — correct credentials → `data.login` matches `{ id, email, name }`, `errors` undefined, injected `contextValue.cookies.set` spy called once with `ACCESS_TOKEN_COOKIE_NAME` and `httpOnly: true`; wrong password → `errors[0].extensions.code === 'UNAUTHENTICATED'`; unknown email → `errors[0].extensions.code === 'UNAUTHENTICATED'` (same code as wrong password); malformed input (invalid email format / empty password) → `errors[0].extensions.code === 'BAD_USER_INPUT'`
+
+[2026-08-04 01:38:55] ✅ Phase 3: Polish
+  Branch: PM-002/phase-3-polish
+  - [ ] B-026: Regenerate `schema.graphql` (`pnpm build` or dev server run triggers `emitSchemaFile`) and commit the diff (new `login` mutation, new `LoginInput` type)
+  - [ ] B-027: Review that `console.error`/logging paths never log `input.password` or the issued `token` (spot-check `LoginUseCase`, `AuthResolver`, `formatError`)
+  - [ ] B-028: Confirm `pnpm build` compiles cleanly with the new `jsonwebtoken` dependency and updated `GraphQLContext` shape
