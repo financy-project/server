@@ -10,4 +10,4 @@ export type {
 } from './entity'
 export { CategoryRepository } from './repository'
 export { CategoryNotFoundError, CategoryAlreadyExistsError } from './errors'
-// export { CategoryResolver } from './resolvers' — added in Phase 2
+export { CategoryResolver } from './resolvers'
