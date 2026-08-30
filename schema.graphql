@@ -3,6 +3,21 @@
 # !!!   DO NOT MODIFY THIS FILE BY YOURSELF   !!!
 # -----------------------------------------------
 
+type CategoryType {
+  color: String!
+  description: String
+  icon: String!
+  id: ID!
+  title: String!
+}
+
+input CreateCategoryInput {
+  color: String!
+  description: String
+  icon: String!
+  title: String!
+}
+
 type HealthStatusType {
   connected: Boolean!
   status: String!
@@ -16,18 +31,29 @@ input LoginInput {
 }
 
 type Mutation {
+  createCategory(input: CreateCategoryInput!): CategoryType!
+  deleteCategory(id: ID!): Boolean!
   login(input: LoginInput!): UserType!
   registerUser(input: RegisterUserInput!): UserType!
+  updateCategory(id: ID!, input: UpdateCategoryInput!): CategoryType!
 }
 
 type Query {
   health: HealthStatusType!
+  listCategories: [CategoryType!]!
 }
 
 input RegisterUserInput {
   email: String!
   name: String!
   password: String!
+}
+
+input UpdateCategoryInput {
+  color: String
+  description: String
+  icon: String
+  title: String
 }
 
 type UserType {

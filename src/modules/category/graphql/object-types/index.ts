@@ -1,1 +1,1 @@
-export {} // export { CategoryType } from './category.object-type'
+export { CategoryType } from './category.object-type'
