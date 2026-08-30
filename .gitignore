@@ -30,3 +30,5 @@ npm-debug.log*
 docs/features/PM-*/phase-*-output.log
 
 .pnpm-store/*
+
+.workspace

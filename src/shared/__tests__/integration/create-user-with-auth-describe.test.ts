@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { useDatabase } from '@/test/helpers/db'
+import { generateUUID } from '@/shared/utils/uuid'
 import { User } from '@/modules/user/entity/user.entity'
 import { Auth } from '@/modules/auth/entity/auth.entity'
 import { CreateUserWithAuthRepository } from '../../database/create-user-with-auth'
@@ -8,8 +9,9 @@ describe('CreateUserWithAuthRepository.createUserWithAuth()', () => {
   useDatabase()
 
   it('creates both a users row and an auth row atomically and returns both entities', async () => {
+    const email = `atomic-${generateUUID()}@example.com`
     const user = User.create({
-      email: 'atomic@example.com',
+      email,
       name: 'Atomic User',
     })
     const auth = Auth.create({ userId: user.id, password: 'hashed-password' })
@@ -20,7 +22,7 @@ describe('CreateUserWithAuthRepository.createUserWithAuth()', () => {
     })
 
     expect(result.user.id).toBe(user.id)
-    expect(result.user.email).toBe('atomic@example.com')
+    expect(result.user.email).toBe(email)
     expect(result.user.name).toBe('Atomic User')
 
     expect(result.auth.id).toBe(auth.id)
@@ -35,16 +37,18 @@ describe('CreateUserWithAuthRepository.createUserWithAuth()', () => {
   })
 
   it('rejects with a Prisma P2002 error when the email already exists, creating neither row', async () => {
+    const email = `duplicate-${generateUUID()}@example.com`
+
     await prisma.user.create({
       data: {
-        id: 'existing-user-id',
-        email: 'duplicate@example.com',
+        id: generateUUID(),
+        email,
         name: 'Existing User',
       },
     })
 
     const user = User.create({
-      email: 'duplicate@example.com',
+      email,
       name: 'Duplicate User',
     })
     const auth = Auth.create({ userId: user.id, password: 'hashed-password' })

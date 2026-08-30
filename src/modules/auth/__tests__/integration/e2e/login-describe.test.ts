@@ -3,6 +3,7 @@ import type { ApolloServer } from '@apollo/server'
 import type { GraphQLContext } from '@/context/create-context'
 import { buildApolloServer } from '@/app'
 import { useDatabase } from '@/test/helpers/db'
+import { generateUUID } from '@/shared/utils/uuid'
 import { ACCESS_TOKEN_COOKIE_NAME } from '@/utils/constants'
 
 const REGISTER_USER = `
@@ -53,10 +54,9 @@ describe('login mutation (e2e)', () => {
     jest.clearAllMocks()
   })
 
-  const seedUser = async (
-    email = 'login@example.com',
-    password = 'Supersecret1',
-  ) => {
+  const seedUser = async (password = 'Supersecret1') => {
+    const email = `login-${generateUUID()}@example.com`
+
     await server.executeOperation(
       {
         query: REGISTER_USER,
@@ -66,16 +66,18 @@ describe('login mutation (e2e)', () => {
       },
       { contextValue: mockContext },
     )
+
+    return email
   }
 
   it('T-018: happy path — correct credentials → data.login matches { id, email, name }, no errors, cookies.set called with access_token + httpOnly: true', async () => {
-    await seedUser()
+    const email = await seedUser()
 
     const response = await server.executeOperation(
       {
         query: LOGIN,
         variables: {
-          input: { email: 'login@example.com', password: 'Supersecret1' },
+          input: { email, password: 'Supersecret1' },
         },
       },
       { contextValue: mockContext },
@@ -86,7 +88,7 @@ describe('login mutation (e2e)', () => {
 
     expect(response.body.singleResult.errors).toBeUndefined()
     expect(response.body.singleResult.data?.['login']).toMatchObject({
-      email: 'login@example.com',
+      email,
       name: 'Login User',
     })
     const loginData = response.body.singleResult.data?.['login'] as
@@ -102,13 +104,13 @@ describe('login mutation (e2e)', () => {
   })
 
   it('T-019: wrong password → errors[0].extensions.code === UNAUTHENTICATED', async () => {
-    await seedUser()
+    const email = await seedUser()
 
     const response = await server.executeOperation(
       {
         query: LOGIN,
         variables: {
-          input: { email: 'login@example.com', password: 'WrongPassword1' },
+          input: { email, password: 'WrongPassword1' },
         },
       },
       { contextValue: mockContext },
@@ -129,7 +131,7 @@ describe('login mutation (e2e)', () => {
         query: LOGIN,
         variables: {
           input: {
-            email: 'nobody@example.com',
+            email: `nobody-${generateUUID()}@example.com`,
             password: 'SomePassword1',
           },
         },
