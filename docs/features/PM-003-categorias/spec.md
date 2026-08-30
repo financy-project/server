@@ -10,14 +10,14 @@ Authenticated end users of the Financy app (registered via PM-001, authenticated
 
 ## Acceptance Criteria
 
-- [ ] An authenticated user can create a category with `titulo` (title), `descricao` (description), `icone` (icon), and `cor` (color)
+- [ ] An authenticated user can create a category with `title`, `description`, `icon`, and `color`
 - [ ] An authenticated user can list all categories they created — never another user's categories
 - [ ] An authenticated user can edit their own category (title, description, icon, color)
 - [ ] An authenticated user can delete their own category
 - [ ] Attempting to edit/delete a category that doesn't belong to the requester is rejected
 - [ ] Unauthenticated requests to any category query/mutation are rejected (`UNAUTHENTICATED`)
-- [ ] `titulo` is required and non-empty
-- [ ] `cor` must be a valid color value (format to be finalized in `/feature-plan`)
+- [ ] `title` is required and non-empty
+- [ ] `color` must be a valid color value (format to be finalized in `/feature-plan`)
 
 ## Out of Scope
 
