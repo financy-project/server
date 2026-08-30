@@ -1,6 +1,6 @@
 # Categorias - PM-003 - Phase 2: Features - Test Cases
 
-- [ ] T-009: `requireCurrentUser` returns the authenticated user or throws `UnauthenticatedError`
+- [x] T-009: `requireCurrentUser` returns the authenticated user or throws `UnauthenticatedError`
 - [ ] T-010: `CreateCategoryUseCase.createCategory` happy path returns the created `Category`
 - [ ] T-011: `ListCategoriesUseCase.listCategories` returns the repository's result for the given `userId`
 - [ ] T-012: `UpdateCategoryUseCase.updateCategory` / `DeleteCategoryUseCase.deleteCategory`: not found → `CategoryNotFoundError`; not owned → `CategoryNotFoundError` (same as not found); owned → delegates to the repository

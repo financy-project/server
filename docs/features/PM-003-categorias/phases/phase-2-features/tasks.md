@@ -1,7 +1,7 @@
 # Categorias - PM-003 - Phase 2: Features - Tasks
 
-- [ ] B-012: Implement `requireCurrentUser(ctx: GraphQLContext): AuthenticatedUser` in `src/shared/utils/require-current-user.ts`; export from `src/shared/utils/index.ts`.
-- [ ] B-013: Unit tests for `requireCurrentUser` (`src/shared/utils/__tests__/unit/require-current-user-describe.test.ts`): returns `ctx.currentUser` when set; throws `UnauthenticatedError` when `ctx.currentUser` is `null`.
+- [x] B-012: Implement `requireCurrentUser(ctx: GraphQLContext): AuthenticatedUser` in `src/shared/utils/require-current-user.ts`; export from `src/shared/utils/index.ts`.
+- [x] B-013: Unit tests for `requireCurrentUser` (`src/shared/utils/__tests__/unit/require-current-user-describe.test.ts`): returns `ctx.currentUser` when set; throws `UnauthenticatedError` when `ctx.currentUser` is `null`.
 - [ ] B-014: Implement `CreateCategoryUseCase.createCategory`, `ListCategoriesUseCase.listCategories`, `UpdateCategoryUseCase.updateCategory`, `DeleteCategoryUseCase.deleteCategory` (`src/modules/category/use-cases/*.use-case.ts`) exactly per the Use-Case Blueprint's steps.
 - [ ] B-015: Unit tests for all four use-cases (`src/modules/category/__tests__/unit/use-cases/*-describe.test.ts`, `CategoryRepository` mocked): `createCategory` happy path returns the created entity; `listCategories` returns whatever the repository returns for that `userId`; `updateCategory`/`deleteCategory` each cover every row of their Decision Table (not found, not owned → `CategoryNotFoundError`; owned → proceeds and calls the right repository method with the right args).
 - [ ] B-016: Implement `CategoryType` object type (`src/modules/category/graphql/object-types/category.object-type.ts`) and `toCategoryType` mapper (`src/modules/category/mappers/category.mapper.ts`) per the GraphQL Blueprint field list.
