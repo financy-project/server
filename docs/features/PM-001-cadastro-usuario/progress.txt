@@ -1,0 +1,6 @@
+
+[2026-08-02 12:11:36] ✅ Phase 1: Foundation
+  Branch: PM-001/phase-1-foundation
+  - [ ] B-005: Implement `Auth` entity (`src/modules/auth/entity/auth.entity.ts`): `AuthProps = { id: string; userId: string; password: string }`, `CreateAuthProps = Omit<AuthProps, 'id'>`, `static create(props: CreateAuthProps): Auth`, `static fromRepository(props: AuthProps): Auth`
+  - [ ] B-006: Unit tests for `Auth` entity (`src/modules/auth/__tests__/unit/entity/auth-create-describe.test.ts`): `create` sets the provided `userId`/`password` and generates a UUID `id`
+  - [ ] B-007: Implement `UserAlreadyExistsError` (`src/modules/user/errors/user-errors.ts`): extends `DomainError`, `constructor(message: string = 'errors.user_already_exists')`, code `'CONFLICT'`, `this.name = 'UserAlreadyExistsError'`, `Object.setPrototypeOf(this, UserAlreadyExistsError.prototype)`
