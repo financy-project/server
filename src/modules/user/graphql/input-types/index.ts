@@ -1,1 +1,1 @@
-export {} // export { CreateUserInput } from './create-user.input'
+export { RegisterUserInput } from './register-user.input'
