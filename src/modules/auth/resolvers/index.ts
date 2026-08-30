@@ -1,1 +1,1 @@
-export {} // export { AuthResolver } from './auth.resolver'
+export { AuthResolver } from './auth.resolver'

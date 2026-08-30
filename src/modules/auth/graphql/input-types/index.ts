@@ -1,1 +1,1 @@
-export {} // export { CreateAuthInput } from './create-auth.input'
+export { LoginInput } from './login.input'
