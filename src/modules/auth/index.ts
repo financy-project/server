@@ -8,3 +8,5 @@
 
 export { Auth } from './entity/auth.entity'
 export type { AuthProps, CreateAuthProps } from './entity/auth.entity'
+export { InvalidCredentialsError } from './errors'
+export { AuthResolver } from './resolvers'

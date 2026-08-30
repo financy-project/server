@@ -1,15 +1,17 @@
 import 'reflect-metadata'
-import { ApolloServer } from '@apollo/server'
-import { buildAppSchema } from '@/schema/build-schema'
+import type { ApolloServer } from '@apollo/server'
+import type { GraphQLContext } from '@/context/create-context'
+import { buildApolloServer } from '@/app'
 import { useDatabase } from '@/test/helpers/db'
+import { generateUUID } from '@/shared/utils/uuid'
 
 describe('registerUser mutation (e2e)', () => {
   useDatabase()
 
-  let server: ApolloServer
+  let server: ApolloServer<GraphQLContext>
 
   beforeAll(async () => {
-    server = new ApolloServer({ schema: await buildAppSchema() })
+    server = await buildApolloServer()
   })
 
   afterAll(async () => {
@@ -17,6 +19,8 @@ describe('registerUser mutation (e2e)', () => {
   })
 
   it('T-017: happy path returns id, email, name with no errors', async () => {
+    const email = `test-${generateUUID()}@example.com`
+
     const response = await server.executeOperation({
       query: `
         mutation RegisterUser($input: RegisterUserInput!) {
@@ -29,7 +33,7 @@ describe('registerUser mutation (e2e)', () => {
       `,
       variables: {
         input: {
-          email: 'test@example.com',
+          email,
           name: 'Test User',
           password: 'Supersecret1',
         },
@@ -40,7 +44,7 @@ describe('registerUser mutation (e2e)', () => {
     if (response.body.kind !== 'single') return
     expect(response.body.singleResult.errors).toBeUndefined()
     expect(response.body.singleResult.data?.['registerUser']).toMatchObject({
-      email: 'test@example.com',
+      email,
       name: 'Test User',
     })
     const regUser = response.body.singleResult.data?.['registerUser'] as
@@ -50,7 +54,7 @@ describe('registerUser mutation (e2e)', () => {
 
   it('T-018: duplicate email returns CONFLICT error code', async () => {
     const input = {
-      email: 'duplicate@example.com',
+      email: `duplicate-${generateUUID()}@example.com`,
       name: 'Dup User',
       password: 'Supersecret1',
     }

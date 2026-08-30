@@ -10,7 +10,13 @@ type HealthStatusType {
   version: String!
 }
 
+input LoginInput {
+  email: String!
+  password: String!
+}
+
 type Mutation {
+  login(input: LoginInput!): UserType!
   registerUser(input: RegisterUserInput!): UserType!
 }
 
