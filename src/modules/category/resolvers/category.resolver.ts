@@ -12,7 +12,10 @@ import { ListCategoriesUseCase } from '../use-cases/list-categories.use-case'
 import { UpdateCategoryUseCase } from '../use-cases/update-category.use-case'
 import { DeleteCategoryUseCase } from '../use-cases/delete-category.use-case'
 import { CategoryType } from '../graphql/object-types/category.object-type'
-import { toCategoryType } from '../mappers/category.mapper'
+import {
+  toCategoryType,
+  toUpdateCategoryPatch,
+} from '../mappers/category.mapper'
 
 @Resolver()
 export class CategoryResolver {
@@ -46,11 +49,11 @@ export class CategoryResolver {
   ): Promise<CategoryType> {
     const { id: userId } = requireCurrentUser(ctx)
     const { id: validatedId } = await CategoryIdValidation.validate({ id })
-    const patch = await UpdateCategoryValidation.validate(input)
+    const validated = await UpdateCategoryValidation.validate(input)
     const category = await UpdateCategoryUseCase.updateCategory({
       id: validatedId,
       userId,
-      patch,
+      patch: toUpdateCategoryPatch(validated),
     })
     return toCategoryType(category)
   }

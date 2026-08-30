@@ -1,1 +1,1 @@
-export {} // export { toCategoryType } from './category.mapper'
+export { toCategoryType, toUpdateCategoryPatch } from './category.mapper'

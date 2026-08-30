@@ -60,4 +60,30 @@ describe('UpdateCategoryValidation.validate()', () => {
       } as never),
     ).rejects.toThrow(ValidationError)
   })
+
+  it('throws ValidationError for an explicit null title (NOT NULL column)', async () => {
+    await expect(
+      UpdateCategoryValidation.validate({ title: null } as never),
+    ).rejects.toThrow(ValidationError)
+  })
+
+  it('throws ValidationError for an explicit null icon (NOT NULL column)', async () => {
+    await expect(
+      UpdateCategoryValidation.validate({ icon: null } as never),
+    ).rejects.toThrow(ValidationError)
+  })
+
+  it('throws ValidationError for an explicit null color (NOT NULL column)', async () => {
+    await expect(
+      UpdateCategoryValidation.validate({ color: null } as never),
+    ).rejects.toThrow(ValidationError)
+  })
+
+  it('accepts an explicit null description (nullable column)', async () => {
+    const result = await UpdateCategoryValidation.validate({
+      description: null,
+    } as never)
+
+    expect(result.description).toBeNull()
+  })
 })

@@ -1,6 +1,10 @@
 import 'reflect-metadata'
 import { Category } from '@/modules/category/entity/category.entity'
-import { toCategoryType } from '@/modules/category/mappers/category.mapper'
+import {
+  toCategoryType,
+  toUpdateCategoryPatch,
+} from '@/modules/category/mappers/category.mapper'
+import type { UpdateCategoryInput } from '@/modules/category/graphql/input-types/update-category.input'
 
 describe('toCategoryType mapper', () => {
   it('T-013: maps id, title, description, icon and color from the entity', () => {
@@ -50,5 +54,39 @@ describe('toCategoryType mapper', () => {
     const result = toCategoryType(category)
 
     expect(result).not.toHaveProperty('userId')
+  })
+})
+
+describe('toUpdateCategoryPatch mapper', () => {
+  it('maps every field from a fully-populated input', () => {
+    const input = {
+      title: 'Groceries',
+      description: 'Weekly food shopping',
+      icon: 'cart',
+      color: '#FF00AA',
+    } as UpdateCategoryInput
+
+    expect(toUpdateCategoryPatch(input)).toEqual({
+      title: 'Groceries',
+      description: 'Weekly food shopping',
+      icon: 'cart',
+      color: '#FF00AA',
+    })
+  })
+
+  it('carries an explicit null description through as-is', () => {
+    const input = { description: null } as UpdateCategoryInput
+
+    expect(toUpdateCategoryPatch(input).description).toBeNull()
+  })
+
+  it('carries omitted fields through as undefined', () => {
+    const input = {} as UpdateCategoryInput
+
+    const patch = toUpdateCategoryPatch(input)
+
+    expect(patch.title).toBeUndefined()
+    expect(patch.icon).toBeUndefined()
+    expect(patch.color).toBeUndefined()
   })
 })

@@ -7,10 +7,10 @@ export class CreateCategoryInput {
   @Length(1, 100, { message: 'validations.category_title_required' })
   title!: string
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsOptional()
   @MaxLength(500, { message: 'validations.category_description_max' })
-  description?: string
+  description?: string | null
 
   @Field()
   @Length(1, 100, { message: 'validations.category_icon_required' })

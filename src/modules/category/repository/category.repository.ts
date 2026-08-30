@@ -44,7 +44,9 @@ const findById = async (id: string): Promise<Category> => {
 const findAllByUserId = async (userId: string): Promise<Category[]> => {
   const rows = await prisma.category.findMany({
     where: { userId },
-    orderBy: { createdAt: 'asc' },
+    // id is a UUIDv7 (time-ordered), so it's a stable tiebreaker for rows
+    // created within the same createdAt millisecond.
+    orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
   })
 
   return rows.map((row) => Category.fromRepository(row))
