@@ -1,1 +1,1 @@
-export {} // export { CategoryResolver } from './category.resolver'
+export { CategoryResolver } from './category.resolver'
