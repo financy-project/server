@@ -8,7 +8,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "predev": "pnpm docker:dev",
+    "predev": "pnpm docker:dev && pnpm prisma:migrate:deploy:dev",
     "dev": "dotenv -e .env.dev -- nodemon",
     "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
     "start": "node dist/server.js",
@@ -31,6 +31,7 @@
     "format:check": "prettier --check .",
     "prisma:generate": "dotenv -e .env.dev -- prisma generate",
     "prisma:migrate:dev": "dotenv -e .env.dev -- prisma migrate dev",
+    "prisma:migrate:deploy:dev": "dotenv -e .env.dev -- prisma migrate deploy",
     "prisma:migrate:deploy:integration": "dotenv -e .env.integration -- prisma migrate deploy",
     "prisma:migrate:deploy:e2e": "dotenv -e .env.e2e -- prisma migrate deploy",
     "prisma:studio": "dotenv -e .env.dev -- prisma studio",
