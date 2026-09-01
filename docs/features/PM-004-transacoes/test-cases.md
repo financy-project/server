@@ -15,7 +15,7 @@ Generated from `plan.md`'s `## Test Cases` — each entry copied verbatim, prefi
 - [x] T-009: `TransactionRepository.findById` returns the transaction or throws `TransactionNotFoundError`
 - [x] T-010: `TransactionRepository.findAllByUserId` returns only the given user's transactions within the date range, correctly paginated (`hasNextPage`/`endCursor`)
 - [x] T-011: `TransactionRepository.update`/`remove` throw `TransactionNotFoundError` for a missing id
-- [ ] T-012: `CategoryRepository.findManyByIds` returns only the matching categories
+- [x] T-012: `CategoryRepository.findManyByIds` returns only the matching categories
 
 ## Phase 2: Features
 
