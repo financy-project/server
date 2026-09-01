@@ -10,19 +10,19 @@ Authenticated end users of the Financy app (registered via PM-001, authenticated
 
 ## Acceptance Criteria
 
-- [ ] An authenticated user can create a transaction with `type` (`EXPENSE` or `INCOME`), `description`, `date`, `value` (positive integer, cents), and `categoryId` (required, must reference a category owned by the requester)
-- [ ] An authenticated user can list their own transactions, paginated (cursor-based) and filterable by `startDate`/`endDate` — defaulting to the current month when no range is given — never another user's transactions
-- [ ] An authenticated user can edit their own transaction (`type`, `description`, `date`, `value`, `categoryId`)
-- [ ] An authenticated user can delete their own transaction
-- [ ] Attempting to edit/delete a transaction that doesn't belong to the requester is rejected (`NOT_FOUND`)
-- [ ] Unauthenticated requests to any transaction query/mutation are rejected (`UNAUTHENTICATED`)
-- [ ] `value` is required and must be a positive integer (cents)
-- [ ] `type` is required and must be one of `EXPENSE`, `INCOME`
-- [ ] `description` is required and non-empty
-- [ ] `date` is required
-- [ ] `categoryId` must reference a category owned by the requesting user, both on create and on update (otherwise rejected with `NOT_FOUND`)
-- [ ] If the category referenced by a transaction is later deleted, the transaction's category becomes empty (not deleted itself) — a transaction never disappears because its category did
-- [ ] Each transaction exposes a summary of its linked category (name + color) so clients can render it without a second query
+- [x] An authenticated user can create a transaction with `type` (`EXPENSE` or `INCOME`), `description`, `date`, `value` (positive integer, cents), and `categoryId` (required, must reference a category owned by the requester)
+- [x] An authenticated user can list their own transactions, paginated (cursor-based) and filterable by `startDate`/`endDate` — defaulting to the current month when no range is given — never another user's transactions
+- [x] An authenticated user can edit their own transaction (`type`, `description`, `date`, `value`, `categoryId`)
+- [x] An authenticated user can delete their own transaction
+- [x] Attempting to edit/delete a transaction that doesn't belong to the requester is rejected (`NOT_FOUND`)
+- [x] Unauthenticated requests to any transaction query/mutation are rejected (`UNAUTHENTICATED`)
+- [x] `value` is required and must be a positive integer (cents)
+- [x] `type` is required and must be one of `EXPENSE`, `INCOME`
+- [x] `description` is required and non-empty
+- [x] `date` is required
+- [x] `categoryId` must reference a category owned by the requesting user, both on create and on update (otherwise rejected with `NOT_FOUND`)
+- [x] If the category referenced by a transaction is later deleted, the transaction's category becomes empty (not deleted itself) — a transaction never disappears because its category did
+- [x] Each transaction exposes a summary of its linked category (name + color) so clients can render it without a second query
 
 ## Out of Scope
 
