@@ -7,3 +7,4 @@ export {
   parseGraphqlInputError,
   type GraphqlInputFieldError,
 } from './parse-graphql-input-error'
+export { encodeCursor, decodeCursor, type Cursor } from './cursor'
