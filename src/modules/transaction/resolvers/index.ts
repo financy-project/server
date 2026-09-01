@@ -1,1 +1,1 @@
-export {} // export { TransactionResolver } from './transaction.resolver'
+export { TransactionResolver } from './transaction.resolver'

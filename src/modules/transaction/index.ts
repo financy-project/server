@@ -14,4 +14,4 @@ export {
   TransactionCategoryNotFoundError,
 } from './errors'
 export { TransactionRepository } from './repository'
-// export { TransactionResolver } from './resolvers'
+export { TransactionResolver } from './resolvers'
