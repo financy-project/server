@@ -1,1 +1,4 @@
-export {} // export { TransactionNotFoundError } from './transaction-errors'
+export {
+  TransactionNotFoundError,
+  TransactionCategoryNotFoundError,
+} from './transaction-errors'

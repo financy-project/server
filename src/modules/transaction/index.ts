@@ -9,6 +9,9 @@ export type {
   UpdateTransactionPatch,
 } from './entity'
 export { TransactionKind } from './enums'
+export {
+  TransactionNotFoundError,
+  TransactionCategoryNotFoundError,
+} from './errors'
 // export { TransactionRepository } from './repository'
-// export { TransactionNotFoundError, TransactionCategoryNotFoundError } from './errors'
 // export { TransactionResolver } from './resolvers'
