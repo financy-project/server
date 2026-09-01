@@ -2,8 +2,13 @@
 // Only export: entity, types, enums, errors, repository, resolver.
 // NEVER export: use-cases, validation wrappers, mappers, ports, adapters, gateways, loaders.
 
-export {} // export { Transaction } from './entity'
-// export type { TransactionProps } from './types'
+export { Transaction } from './entity'
+export type {
+  TransactionProps,
+  CreateTransactionProps,
+  UpdateTransactionPatch,
+} from './entity'
+export { TransactionKind } from './enums'
 // export { TransactionRepository } from './repository'
-// export { TransactionNotFoundError } from './errors'
+// export { TransactionNotFoundError, TransactionCategoryNotFoundError } from './errors'
 // export { TransactionResolver } from './resolvers'

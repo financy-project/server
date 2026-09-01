@@ -1,1 +1,1 @@
-export {} // export { TransactionStatus } from './transaction-status.enum'
+export { TransactionKind } from './transaction-kind.enum'

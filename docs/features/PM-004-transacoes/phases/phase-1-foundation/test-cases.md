@@ -1,7 +1,7 @@
 # Transações - PM-004 - Phase 1: Foundation - Test Cases
 
-- [ ] T-001: `Transaction.create()` generates an `id` and copies `userId`/`categoryId`/`type`/`description`/`date`/`value`
-- [ ] T-002: `Transaction.belongsTo()` returns `true` for the owning `userId`, `false` otherwise
+- [x] T-001: `Transaction.create()` generates an `id` and copies `userId`/`categoryId`/`type`/`description`/`date`/`value`
+- [x] T-002: `Transaction.belongsTo()` returns `true` for the owning `userId`, `false` otherwise
 - [ ] T-003: `CreateTransactionValidation`/`UpdateTransactionValidation` reject an invalid `type`, empty `description`, non-date `date`, non-positive/non-integer `value`, and a non-UUID `categoryId`
 - [ ] T-004: `TransactionIdValidation` rejects a non-UUID `id`
 - [ ] T-005: `ListTransactionsValidation` rejects a one-sided date range, `endDate < startDate`, and `first` outside `[1, 50]`
