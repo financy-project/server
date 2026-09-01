@@ -19,7 +19,7 @@ Generated from `plan.md`'s `## Test Cases` — each entry copied verbatim, prefi
 
 ## Phase 2: Features
 
-- [ ] T-013: `findCategoriesByIdsAdapter` maps `CategoryRepository.findManyByIds` results to `CategoryDTO[]`
+- [x] T-013: `findCategoriesByIdsAdapter` maps `CategoryRepository.findManyByIds` results to `CategoryDTO[]`
 - [ ] T-014: `findCategoriesByIds` gateway dedupes ids and short-circuits an empty array
 - [ ] T-015: `CreateTransactionUseCase.createTransaction` happy path returns the created `Transaction`; foreign/nonexistent `categoryId` → `TransactionCategoryNotFoundError`
 - [ ] T-016: `ListTransactionsUseCase.listTransactions` defaults to `getCurrentMonthRange()` when no dates given; passes explicit dates through otherwise
