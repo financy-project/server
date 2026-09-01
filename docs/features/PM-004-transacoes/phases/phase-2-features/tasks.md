@@ -1,6 +1,6 @@
 # Transações - PM-004 - Phase 2: Features - Tasks
 
-- [ ] B-017: Implement port `FindCategoriesByIdsPort`/`CategoryDTO` (`src/modules/transaction/ports/find-categories-by-ids.port.ts`); export from `src/modules/transaction/ports/index.ts`.
+- [x] B-017: Implement port `FindCategoriesByIdsPort`/`CategoryDTO` (`src/modules/transaction/ports/find-categories-by-ids.port.ts`); export from `src/modules/transaction/ports/index.ts`.
 - [ ] B-018: Implement adapter `findCategoriesByIdsAdapter` (`src/modules/category/adapters/find-categories-by-ids.adapter.ts`), implementing `FindCategoriesByIdsPort` via `CategoryRepository.findManyByIds`, mapping each `Category` to `{ id, userId, title, color }`; export from new `src/modules/category/adapters/index.ts`.
 - [ ] B-019: Unit test for the adapter (`src/modules/category/__tests__/unit/adapters/find-categories-by-ids-adapter-describe.test.ts`, `CategoryRepository` mocked): maps repository results to `CategoryDTO[]` correctly.
 - [ ] B-020: Implement gateway `findCategoriesByIds` (`src/modules/transaction/gateways/find-categories-by-ids.gateway.ts`): dedupes `ids`, returns `[]` for an empty array without calling the adapter, otherwise calls `findCategoriesByIdsAdapter`; export from `src/modules/transaction/gateways/index.ts`.
