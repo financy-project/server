@@ -7,8 +7,8 @@
 - [x] T-005: `ListTransactionsValidation` rejects a one-sided date range, `endDate < startDate`, and `first` outside `[1, 50]`
 - [x] T-006: `encodeCursor`/`decodeCursor` round-trip a `{ date, id }` pair; `decodeCursor` rejects a malformed cursor
 - [x] T-007: `getCurrentMonthRange` returns the correct start/end for the current month
-- [ ] T-008: `TransactionRepository.create` persists a transaction
-- [ ] T-009: `TransactionRepository.findById` returns the transaction or throws `TransactionNotFoundError`
-- [ ] T-010: `TransactionRepository.findAllByUserId` returns only the given user's transactions within the date range, correctly paginated (`hasNextPage`/`endCursor`)
-- [ ] T-011: `TransactionRepository.update`/`remove` throw `TransactionNotFoundError` for a missing id
+- [x] T-008: `TransactionRepository.create` persists a transaction
+- [x] T-009: `TransactionRepository.findById` returns the transaction or throws `TransactionNotFoundError`
+- [x] T-010: `TransactionRepository.findAllByUserId` returns only the given user's transactions within the date range, correctly paginated (`hasNextPage`/`endCursor`)
+- [x] T-011: `TransactionRepository.update`/`remove` throw `TransactionNotFoundError` for a missing id
 - [ ] T-012: `CategoryRepository.findManyByIds` returns only the matching categories
