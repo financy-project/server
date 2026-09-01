@@ -24,7 +24,7 @@ Generated from `plan.md`'s `## Test Cases` — each entry copied verbatim, prefi
 - [x] T-015: `CreateTransactionUseCase.createTransaction` happy path returns the created `Transaction`; foreign/nonexistent `categoryId` → `TransactionCategoryNotFoundError`
 - [x] T-016: `ListTransactionsUseCase.listTransactions` defaults to `getCurrentMonthRange()` when no dates given; passes explicit dates through otherwise
 - [x] T-017: `UpdateTransactionUseCase.updateTransaction` / `DeleteTransactionUseCase.deleteTransaction`: not found → `TransactionNotFoundError`; not owned → `TransactionNotFoundError`; owned → delegates to the repository; `updateTransaction` with a foreign `categoryId` → `TransactionCategoryNotFoundError`
-- [ ] T-018: `toTransactionType`/`toTransactionCategoryType`/`toUpdateTransactionPatch` map every field correctly
+- [x] T-018: `toTransactionType`/`toTransactionCategoryType`/`toUpdateTransactionPatch` map every field correctly
 - [ ] T-019: `categoriesById` loader batches and returns results in input-key order, `null` for missing ids
 - [ ] T-020: `createTransaction` mutation (e2e): happy path; foreign `categoryId` → `NOT_FOUND`; invalid `value`/`type`/`date`/`description` → `BAD_USER_INPUT`; unauthenticated → `UNAUTHENTICATED`
 - [ ] T-021: `listTransactions` query (e2e): returns only the caller's own transactions, respects date filters, defaults to the current month, paginates, resolves `category`
