@@ -25,3 +25,11 @@
     - `buildTransactionsQuantityByCategoryIdLoader(): DataLoader<string, number>` — `src/modules/category/loaders/transactions-quantity-by-category-id.loader.ts`
     - `countTransactionsByCategoryIds: CountTransactionsByCategoryIdsPort` (gateway) — `src/modules/category/gateways/count-transactions-by-category-ids.gateway.ts`
     - `CategoryType.transactionsQuantity: number` (GraphQL field, resolved via `CategoryResolver.transactionsQuantity` FieldResolver) — `src/modules/category/graphql/object-types/category.object-type.ts`, `src/modules/category/resolvers/category.resolver.ts`
+
+[2026-09-03 20:55:00] ✅ Phase 3: Polish
+  Branch: PM-012/phase-3-polish
+  - [x] B-013: E2E test for `listCategories { transactionsQuantity }` (`src/modules/category/__tests__/integration/e2e/list-categories-describe.test.ts`, extended `describe` block): a category with 3 transactions reports `3`, a category with 0 transactions reports `0`, each category in the same response reports its own independent count.
+  - [x] B-014: Regenerated `schema.graphql` — additive diff only (`transactionsQuantity: Int!` added to `CategoryType`).
+  - [x] B-015: `pnpm test` (244/244) and `pnpm build` both pass clean.
+  Exports:
+    No new exported signatures — this phase was verification (e2e test, `pnpm test`, `pnpm build`) and the committed `schema.graphql` artifact.
