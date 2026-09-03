@@ -18,3 +18,11 @@
   - [ ] B-008: Confirm the existing `httpOnly` cookie flow is unaffected: no code change is expected in `src/context/create-context.ts` (Express's `req`/`res` are structurally compatible with the `IncomingMessage`/`ServerResponse` types `createContext` already expects) — this is a verification item, not an implementation item.
   Exports:
     - `src/server.ts` now calls `buildExpressApp(server, Environments.allowedOrigins)` + `app.listen(Environments.port, ...)` instead of `startStandaloneServer` (no new exported signature — internal wiring change only)
+
+[2026-09-03 13:47:44] ✅ Phase 3: Polish
+  Branch: PM-008/phase-3-polish
+  - [ ] B-009: Run `pnpm test:e2e` unmodified and confirm it's still green — this is the regression check that `buildApolloServer` (used directly by every e2e test) was not altered by this feature.
+  - [ ] B-010: Run `pnpm build` and confirm it compiles clean with the new `express`/`cors`/`@as-integrations/express5` types in place.
+  - [ ] B-011: Update `README.md` (if it documents how to start the server / hit the API locally) to mention `ALLOWED_ORIGINS` must be set for a browser-based client to work.
+  Exports:
+    No new exported signatures — this phase was verification (`pnpm test:e2e`, `pnpm build`) and documentation (`README.md` — `ALLOWED_ORIGINS` requirement noted for browser-based clients).

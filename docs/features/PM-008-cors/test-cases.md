@@ -15,4 +15,4 @@ Generated from `plan.md`'s `## Test Cases` — each entry copied verbatim, prefi
 
 ## Phase 3: Polish
 
-- [ ] T-006: `pnpm test:e2e` passes unmodified (regression, not a new test case)
+- [x] T-006: `pnpm test:e2e` passes unmodified (regression, not a new test case)
