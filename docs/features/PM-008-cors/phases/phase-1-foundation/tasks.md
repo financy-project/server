@@ -1,6 +1,6 @@
 # CORS - PM-008 - Phase 1: Foundation - Tasks
 
-- [ ] B-001: Add `express` (^5), `cors` (^2), `@as-integrations/express5` to `dependencies`, and `@types/express`, `@types/cors`, `supertest`, `@types/supertest` to `devDependencies` in `package.json`.
+- [x] B-001: Add `express` (^5), `cors` (^2), `@as-integrations/express5` to `dependencies`, and `@types/express`, `@types/cors`, `supertest`, `@types/supertest` to `devDependencies` in `package.json`.
 - [ ] B-002: Add `ALLOWED_ORIGINS` to `src/config/environments.ts`: schema entry `ALLOWED_ORIGINS: z.string().default('').transform((val) => val.split(',').map((origin) => origin.trim()).filter(Boolean))`, the matching `env.parse(...)` call entry `ALLOWED_ORIGINS: process.env['ALLOWED_ORIGINS']`, and getter `get allowedOrigins(): string[] { return env.ALLOWED_ORIGINS }`.
 - [ ] B-003: Add `ALLOWED_ORIGINS=http://localhost:5173` to `.env.example`, `.env.dev`, `.env.integration`, `.env.e2e`. Leave `.env.test` unset (defaults to `[]`).
 - [ ] B-004: Implement `buildExpressApp` in `src/app.ts`: `export const buildExpressApp = async (server: ApolloServer<GraphQLContext>, allowedOrigins: readonly string[]): Promise<Express>` — calls `await server.start()`, creates an `express()` app, mounts on `/graphql`: `cors({ origin: allowedOrigins, credentials: true })`, `express.json()`, `expressMiddleware(server, { context: createContext })` (from `@as-integrations/express5`), returns the app. `buildApolloServer` is not modified.
