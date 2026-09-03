@@ -1,1 +1,6 @@
-export {} // export { toTransactionType } from './transaction.mapper'
+export {
+  toTransactionType,
+  toTransactionCategoryType,
+  toUpdateTransactionPatch,
+} from './transaction.mapper'
+export { toTransactionConnection } from './transaction-connection.mapper'
