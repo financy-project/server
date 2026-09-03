@@ -1,0 +1,25 @@
+# Categorias - PM-003 - Test Cases
+
+Generated from `plan.md`'s `## Test Cases` — each entry copied verbatim, prefixed with a `T-NNN` id.
+
+## Phase 1: Foundation
+
+- [x] T-001: `Category.create()` generates an `id` and copies `userId`/`title`/`description`/`icon`/`color`
+- [x] T-002: `Category.belongsTo()` returns `true` for the owning `userId`, `false` otherwise
+- [x] T-003: `CreateCategoryValidation`/`UpdateCategoryValidation` reject empty `title`, `description` over 500 chars, empty `icon`, and `color` not matching `#RRGGBB`
+- [x] T-004: `CategoryIdValidation` rejects a non-UUID `id`
+- [x] T-005: `CategoryRepository.create` persists a category and throws `CategoryAlreadyExistsError` on a duplicate `(userId, title)`
+- [x] T-006: `CategoryRepository.findById` returns the category or throws `CategoryNotFoundError`
+- [x] T-007: `CategoryRepository.findAllByUserId` returns only the given user's categories
+- [x] T-008: `CategoryRepository.update`/`remove` throw `CategoryNotFoundError` for a missing id, and `update` throws `CategoryAlreadyExistsError` on a title collision
+
+## Phase 2: Features
+
+- [x] T-009: `requireCurrentUser` returns the authenticated user or throws `UnauthenticatedError`
+- [x] T-010: `CreateCategoryUseCase.createCategory` happy path returns the created `Category`
+- [x] T-011: `ListCategoriesUseCase.listCategories` returns the repository's result for the given `userId`
+- [x] T-012: `UpdateCategoryUseCase.updateCategory` / `DeleteCategoryUseCase.deleteCategory`: not found → `CategoryNotFoundError`; not owned → `CategoryNotFoundError` (same as not found); owned → delegates to the repository
+- [x] T-013: `toCategoryType` maps every exposed field, including a `null` `description`
+- [x] T-014: `createCategory` mutation (e2e): happy path; duplicate `title` → `CONFLICT`; invalid `color` → `BAD_USER_INPUT`; unauthenticated → `UNAUTHENTICATED`
+- [x] T-015: `listCategories` query (e2e): returns only the caller's own categories
+- [x] T-016: `updateCategory`/`deleteCategory` mutations (e2e): happy path; another user's category → `NOT_FOUND`; nonexistent id → `NOT_FOUND`

@@ -26,7 +26,9 @@ pnpm test --testPathPatterns=e2e
 
 ### Database (Docker Compose)
 
-Three isolated environments, matching `docker-compose.dev.yml` / `docker-compose.integration.yml` / `docker-compose.e2e.yml`. **You don't need to start these manually** — `pnpm dev`, `pnpm test:integration`, and `pnpm test:e2e` each run a `pre*` script (`predev`, `pretest:integration`, `pretest:e2e`) that brings up their container automatically via `docker compose up -d --wait`, blocking until Postgres reports healthy before the actual command runs. This is pnpm's standard pre/post script convention — no extra tooling involved.
+Three isolated environments, matching `docker-compose.dev.yml` / `docker-compose.integration.yml` / `docker-compose.e2e.yml`. **You don't need to start these manually** — `pnpm dev`, `pnpm test:integration`, and `pnpm test:e2e` each run a `pre*` script (`predev`, `pretest:integration`, `pretest:e2e`) that brings up their container automatically via `docker compose up -d --wait`, blocking until Postgres reports healthy, then applies any pending migrations with `prisma migrate deploy` before the actual command runs. This is pnpm's standard pre/post script convention — no extra tooling involved.
+
+New migrations still need `pnpm prisma:migrate:dev` to be created in the first place (interactive, dev-only) — the `pre*` scripts only ever _deploy_ migrations already committed to `prisma/migrations/`, never create new ones.
 
 ```bash
 # Manual control, if you want it — idempotent, safe to run anytime:
