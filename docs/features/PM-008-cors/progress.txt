@@ -10,3 +10,11 @@
     - `buildExpressApp(server: ApolloServer<GraphQLContext>, allowedOrigins: readonly string[]): Promise<Express>` — `src/app.ts`
     - `Environments.allowedOrigins: string[]` — `src/config/environments.ts`
     - `ALLOWED_ORIGINS` env var (comma-separated, trimmed, defaults to `[]`) — `src/config/environments.ts`
+
+[2026-09-03 13:44:18] ✅ Phase 2: Features
+  Branch: PM-008/phase-2-features
+  - [ ] B-006: Update `src/server.ts`: remove the `@apollo/server/standalone` import and `startStandaloneServer` call; call `const app = await buildExpressApp(server, Environments.allowedOrigins)` then `app.listen(Environments.port, () => console.log(...))`.
+  - [ ] B-007: Manual verification (documented in the PR description, not automated): run `pnpm dev`, hit `POST http://localhost:<port>/graphql` with `curl -H "Origin: http://localhost:5173"` and confirm `access-control-allow-origin`/`-credentials` headers appear; repeat with a bogus `Origin` and confirm they don't.
+  - [ ] B-008: Confirm the existing `httpOnly` cookie flow is unaffected: no code change is expected in `src/context/create-context.ts` (Express's `req`/`res` are structurally compatible with the `IncomingMessage`/`ServerResponse` types `createContext` already expects) — this is a verification item, not an implementation item.
+  Exports:
+    - `src/server.ts` now calls `buildExpressApp(server, Environments.allowedOrigins)` + `app.listen(Environments.port, ...)` instead of `startStandaloneServer` (no new exported signature — internal wiring change only)

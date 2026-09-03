@@ -1,7 +1,5 @@
 import 'reflect-metadata'
-import { startStandaloneServer } from '@apollo/server/standalone'
-import { buildApolloServer } from './app'
-import { createContext } from '@/context/create-context'
+import { buildApolloServer, buildExpressApp } from './app'
 import { Environments } from '@/config/environments'
 import { listenersRegistrator } from '@/utils/listenersRegistrator'
 
@@ -9,13 +7,13 @@ const main = async (): Promise<void> => {
   listenersRegistrator()
 
   const server = await buildApolloServer()
+  const app = await buildExpressApp(server, Environments.allowedOrigins)
 
-  const { url } = await startStandaloneServer(server, {
-    context: createContext,
-    listen: { port: Environments.port },
+  app.listen(Environments.port, () => {
+    console.log(
+      `🚀 Server ready at http://localhost:${Environments.port}/graphql`,
+    )
   })
-
-  console.log(`🚀 Server ready at ${url}`)
 }
 
 main().catch((error: unknown) => {
