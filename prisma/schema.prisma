@@ -13,8 +13,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  auth       Auth?
-  categories Category[]
+  auth         Auth?
+  categories   Category[]
+  transactions Transaction[]
 
   @@map("users")
 }
@@ -41,6 +42,30 @@ model Category {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  transactions Transaction[]
+
   @@unique([userId, title])
   @@map("categories")
+}
+
+enum TransactionKind {
+  EXPENSE
+  INCOME
+}
+
+model Transaction {
+  id          String          @id
+  userId      String
+  categoryId  String?
+  type        TransactionKind
+  description String
+  date        DateTime        @db.Date
+  value       Int
+  user        User            @relation(fields: [userId], references: [id])
+  category    Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([userId, date])
+  @@map("transactions")
 }

@@ -41,6 +41,12 @@ const findById = async (id: string): Promise<Category> => {
   return Category.fromRepository(row)
 }
 
+const findManyByIds = async (ids: string[]): Promise<Category[]> => {
+  const rows = await prisma.category.findMany({ where: { id: { in: ids } } })
+
+  return rows.map((row) => Category.fromRepository(row))
+}
+
 const findAllByUserId = async (userId: string): Promise<Category[]> => {
   const rows = await prisma.category.findMany({
     where: { userId },
@@ -90,6 +96,7 @@ const remove = async (id: string): Promise<void> => {
 export const CategoryRepository = {
   create,
   findById,
+  findManyByIds,
   findAllByUserId,
   update,
   remove,

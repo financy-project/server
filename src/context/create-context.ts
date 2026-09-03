@@ -1,8 +1,11 @@
 import type { IncomingMessage, ServerResponse } from 'http'
+import type DataLoader from 'dataloader'
 import { parseCookies, serializeCookie } from '@/shared/utils/cookies'
 import { JwtService } from '@/services/jwt.service'
 import { ACCESS_TOKEN_COOKIE_NAME } from '@/utils/constants'
 import { Environments } from '@/config/environments'
+import type { CategoryDTO } from '@/modules/transaction/ports'
+import { buildCategoriesByIdLoader } from '@/modules/transaction/loaders'
 
 export type CookieOptions = {
   httpOnly?: boolean
@@ -19,7 +22,9 @@ export type AuthenticatedUser = {
 export type GraphQLContext = {
   currentUser: AuthenticatedUser | null
   locale: string
-  loaders: Record<string, never>
+  loaders: {
+    categoriesById: DataLoader<string, CategoryDTO | null>
+  }
   cookies: {
     get(name: string): string | undefined
     set(name: string, value: string, options?: CookieOptions): void
@@ -49,7 +54,9 @@ export const createContext = async ({
   return {
     currentUser: resolveCurrentUser(req),
     locale: Environments.locale,
-    loaders: {},
+    loaders: {
+      categoriesById: buildCategoriesByIdLoader(),
+    },
     cookies: {
       get(name: string): string | undefined {
         return cookieStore[name]
