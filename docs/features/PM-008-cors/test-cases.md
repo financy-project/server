@@ -11,7 +11,7 @@ Generated from `plan.md`'s `## Test Cases` — each entry copied verbatim, prefi
 
 ## Phase 2: Features
 
-- [ ] T-005: Manual verification only (see Implementation Phases) — no new automated test in this phase; covered by Phase 1's `buildExpressApp` suite plus Phase 3's e2e regression run.
+- [x] T-005: Manual verification only (see Implementation Phases) — no new automated test in this phase; covered by Phase 1's `buildExpressApp` suite plus Phase 3's e2e regression run.
 
 ## Phase 3: Polish
 
