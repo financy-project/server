@@ -93,6 +93,57 @@ describe('CategoryRepository (integration)', () => {
     })
   })
 
+  describe('findManyByIds', () => {
+    it('returns only the matching categories', async () => {
+      const user = await createUser()
+      const categoryA = Category.create({
+        userId: user.id,
+        title: 'A',
+        description: null,
+        icon: 'icon',
+        color: '#111111',
+      })
+      const categoryB = Category.create({
+        userId: user.id,
+        title: 'B',
+        description: null,
+        icon: 'icon',
+        color: '#222222',
+      })
+      const categoryC = Category.create({
+        userId: user.id,
+        title: 'C',
+        description: null,
+        icon: 'icon',
+        color: '#333333',
+      })
+      await CategoryRepository.create(categoryA)
+      await CategoryRepository.create(categoryB)
+      await CategoryRepository.create(categoryC)
+
+      const result = await CategoryRepository.findManyByIds([
+        categoryA.id,
+        categoryC.id,
+      ])
+
+      expect(result.map((category) => category.id).sort()).toEqual(
+        [categoryA.id, categoryC.id].sort(),
+      )
+    })
+
+    it('returns an empty array for an empty input', async () => {
+      const result = await CategoryRepository.findManyByIds([])
+
+      expect(result).toEqual([])
+    })
+
+    it('returns an empty array when no ids match', async () => {
+      const result = await CategoryRepository.findManyByIds([generateUUID()])
+
+      expect(result).toEqual([])
+    })
+  })
+
   describe('findAllByUserId', () => {
     it('returns only the given user categories, ordered by createdAt', async () => {
       const userA = await createUser()

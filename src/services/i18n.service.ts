@@ -8,6 +8,9 @@ const translations: Record<Locale, Record<string, string>> = {
     'errors.category_not_found': 'Category not found',
     'errors.category_already_exists':
       'A category with this title already exists',
+    'errors.transaction_not_found': 'Transaction not found',
+    'errors.transaction_category_not_found':
+      'The specified category was not found',
     'errors.unauthenticated': 'You must be authenticated to do this',
     'validations.failed': 'Validation failed',
     'validations.field_required': 'This field is required',
@@ -27,6 +30,22 @@ const translations: Record<Locale, Record<string, string>> = {
     'validations.category_color_format':
       'Color must be a valid hex code in #RRGGBB format',
     'validations.category_id_invalid': 'Id must be a valid UUID',
+    'validations.transaction_type_invalid':
+      'Type must be either EXPENSE or INCOME',
+    'validations.transaction_description_required':
+      'Description must be between 1 and 500 characters',
+    'validations.transaction_date_invalid': 'Date must be a valid date',
+    'validations.transaction_value_integer': 'Value must be an integer',
+    'validations.transaction_value_positive': 'Value must be greater than zero',
+    'validations.transaction_category_id_invalid':
+      'Category id must be a valid UUID',
+    'validations.transaction_id_invalid': 'Id must be a valid UUID',
+    'validations.transaction_date_range_incomplete':
+      'Both startDate and endDate must be provided together',
+    'validations.transaction_date_range_invalid':
+      'endDate must not be before startDate',
+    'validations.transaction_first_min': 'first must be at least 1',
+    'validations.transaction_first_max': 'first must be at most 50',
   },
   'pt-br': {
     'errors.internal_server_error': 'Um erro inesperado ocorreu',
@@ -34,6 +53,9 @@ const translations: Record<Locale, Record<string, string>> = {
     'errors.invalid_credentials': 'E-mail ou senha inválidos',
     'errors.category_not_found': 'Categoria não encontrada',
     'errors.category_already_exists': 'Já existe uma categoria com este título',
+    'errors.transaction_not_found': 'Transação não encontrada',
+    'errors.transaction_category_not_found':
+      'A categoria especificada não foi encontrada',
     'errors.unauthenticated': 'Você precisa estar autenticado para fazer isso',
     'validations.failed': 'Validação falhou',
     'validations.field_required': 'Este campo é obrigatório',
@@ -53,6 +75,21 @@ const translations: Record<Locale, Record<string, string>> = {
     'validations.category_color_format':
       'A cor deve ser um código hexadecimal válido no formato #RRGGBB',
     'validations.category_id_invalid': 'O id deve ser um UUID válido',
+    'validations.transaction_type_invalid': 'O tipo deve ser EXPENSE ou INCOME',
+    'validations.transaction_description_required':
+      'A descrição deve ter entre 1 e 500 caracteres',
+    'validations.transaction_date_invalid': 'A data deve ser válida',
+    'validations.transaction_value_integer': 'O valor deve ser um inteiro',
+    'validations.transaction_value_positive': 'O valor deve ser maior que zero',
+    'validations.transaction_category_id_invalid':
+      'O id da categoria deve ser um UUID válido',
+    'validations.transaction_id_invalid': 'O id deve ser um UUID válido',
+    'validations.transaction_date_range_incomplete':
+      'startDate e endDate devem ser informados juntos',
+    'validations.transaction_date_range_invalid':
+      'endDate não pode ser anterior a startDate',
+    'validations.transaction_first_min': 'first deve ser no mínimo 1',
+    'validations.transaction_first_max': 'first deve ser no máximo 50',
   },
 }
 
