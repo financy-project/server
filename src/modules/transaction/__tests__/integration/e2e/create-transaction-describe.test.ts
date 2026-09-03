@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { generateUUID } from '@/shared/utils/uuid'
 import { Category, CategoryRepository } from '@/modules/category'
 import { buildCategoriesByIdLoader } from '@/modules/transaction/loaders'
+import { buildTransactionsQuantityByCategoryIdLoader } from '@/modules/category/loaders'
 
 const CREATE_TRANSACTION = `
   mutation CreateTransaction($input: CreateTransactionInput!) {
@@ -59,7 +60,11 @@ describe('createTransaction mutation (e2e)', () => {
   const buildContext = (userId: string | null): GraphQLContext => ({
     currentUser: userId ? { id: userId } : null,
     locale: 'en',
-    loaders: { categoriesById: buildCategoriesByIdLoader() },
+    loaders: {
+      categoriesById: buildCategoriesByIdLoader(),
+      transactionsQuantityByCategoryId:
+        buildTransactionsQuantityByCategoryIdLoader(),
+    },
     cookies: { get: jest.fn(), set: jest.fn() },
   })
 

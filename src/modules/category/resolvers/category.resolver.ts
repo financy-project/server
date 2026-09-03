@@ -1,5 +1,15 @@
 import 'reflect-metadata'
-import { Arg, ID, Mutation, Query, Resolver, Ctx } from 'type-graphql'
+import {
+  Arg,
+  Ctx,
+  FieldResolver,
+  ID,
+  Int,
+  Mutation,
+  Query,
+  Resolver,
+  Root,
+} from 'type-graphql'
 import type { GraphQLContext } from '@/context/create-context'
 import { requireCurrentUser } from '@/shared/utils'
 import { CreateCategoryInput } from '../graphql/input-types/create-category.input'
@@ -17,7 +27,7 @@ import {
   toUpdateCategoryPatch,
 } from '../mappers/category.mapper'
 
-@Resolver()
+@Resolver(() => CategoryType)
 export class CategoryResolver {
   @Mutation(() => CategoryType)
   async createCategory(
@@ -67,5 +77,13 @@ export class CategoryResolver {
     const { id: validatedId } = await CategoryIdValidation.validate({ id })
     await DeleteCategoryUseCase.deleteCategory({ id: validatedId, userId })
     return true
+  }
+
+  @FieldResolver(() => Int)
+  async transactionsQuantity(
+    @Root() category: CategoryType,
+    @Ctx() ctx: GraphQLContext,
+  ): Promise<number> {
+    return ctx.loaders.transactionsQuantityByCategoryId.load(category.id)
   }
 }

@@ -6,6 +6,7 @@ import { ACCESS_TOKEN_COOKIE_NAME } from '@/utils/constants'
 import { Environments } from '@/config/environments'
 import type { CategoryDTO } from '@/modules/transaction/ports'
 import { buildCategoriesByIdLoader } from '@/modules/transaction/loaders'
+import { buildTransactionsQuantityByCategoryIdLoader } from '@/modules/category/loaders'
 
 export type CookieOptions = {
   httpOnly?: boolean
@@ -24,6 +25,7 @@ export type GraphQLContext = {
   locale: string
   loaders: {
     categoriesById: DataLoader<string, CategoryDTO | null>
+    transactionsQuantityByCategoryId: DataLoader<string, number>
   }
   cookies: {
     get(name: string): string | undefined
@@ -56,6 +58,8 @@ export const createContext = async ({
     locale: Environments.locale,
     loaders: {
       categoriesById: buildCategoriesByIdLoader(),
+      transactionsQuantityByCategoryId:
+        buildTransactionsQuantityByCategoryIdLoader(),
     },
     cookies: {
       get(name: string): string | undefined {

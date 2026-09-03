@@ -12,6 +12,7 @@ import {
   TransactionKind,
 } from '@/modules/transaction'
 import { buildCategoriesByIdLoader } from '@/modules/transaction/loaders'
+import { buildTransactionsQuantityByCategoryIdLoader } from '@/modules/category/loaders'
 
 const DELETE_CATEGORY = `
   mutation DeleteCategory($id: ID!) {
@@ -57,7 +58,11 @@ describe('deleting a category unlinks its transactions (e2e)', () => {
   const buildContext = (userId: string): GraphQLContext => ({
     currentUser: { id: userId },
     locale: 'en',
-    loaders: { categoriesById: buildCategoriesByIdLoader() },
+    loaders: {
+      categoriesById: buildCategoriesByIdLoader(),
+      transactionsQuantityByCategoryId:
+        buildTransactionsQuantityByCategoryIdLoader(),
+    },
     cookies: { get: jest.fn(), set: jest.fn() },
   })
 
