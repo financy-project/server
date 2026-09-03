@@ -36,6 +36,8 @@ pnpm test:e2e             # testes contra o schema GraphQL real (Docker)
 pnpm lint                # eslint + prettier --check
 ```
 
+Para um cliente browser-based (ex.: o app em `http://localhost:5173`) conseguir chamar a API com cookies de sessão, a variável de ambiente `ALLOWED_ORIGINS` precisa estar definida com a(s) origem(ns) permitida(s) — sem ela, o allowlist de CORS fica vazio e todas as origens são bloqueadas. Veja `.env.example`.
+
 Veja [CLAUDE.md](CLAUDE.md) para o guia operacional completo (comandos, convenções de teste, workflow de features).
 
 ## Fora de escopo (por enquanto)
