@@ -17,6 +17,16 @@ const environmentSchema = z.object({
   GRAPHQL_DEPTH_LIMIT: z.coerce.number().default(10),
 
   LOCALE: z.enum(['en', 'pt-br']).default('pt-br'),
+
+  ALLOWED_ORIGINS: z
+    .string()
+    .default('')
+    .transform((val) =>
+      val
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean),
+    ),
 })
 
 type Environment = z.infer<typeof environmentSchema>
@@ -30,6 +40,7 @@ const env: Environment = environmentSchema.parse({
   GRAPHQL_COMPLEXITY_LIMIT: process.env['GRAPHQL_COMPLEXITY_LIMIT'],
   GRAPHQL_DEPTH_LIMIT: process.env['GRAPHQL_DEPTH_LIMIT'],
   LOCALE: process.env['LOCALE'],
+  ALLOWED_ORIGINS: process.env['ALLOWED_ORIGINS'],
 })
 
 export const Environments = {
@@ -62,5 +73,8 @@ export const Environments = {
   },
   get locale(): string {
     return env.LOCALE
+  },
+  get allowedOrigins(): string[] {
+    return env.ALLOWED_ORIGINS
   },
 }
