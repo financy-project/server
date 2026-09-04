@@ -481,6 +481,123 @@ describe('TransactionRepository (integration)', () => {
         )
       })
     })
+
+    describe('totalRecord', () => {
+      it('equals the full filtered-match count, independent of first', async () => {
+        const user = await createUser()
+        const category = await createCategory(user.id)
+        await Promise.all(
+          [1, 2, 3, 4, 5].map((day) =>
+            TransactionRepository.create(
+              Transaction.create({
+                userId: user.id,
+                categoryId: category.id,
+                type: TransactionKind.EXPENSE,
+                description: `Day ${day}`,
+                date: new Date(`2026-01-0${day}`),
+                value: 100,
+              }),
+            ),
+          ),
+        )
+
+        const result = await TransactionRepository.findAllByUserId(
+          user.id,
+          {
+            startDate: null,
+            endDate: null,
+            description: null,
+            type: null,
+            categoryIds: null,
+          },
+          { first: 2, after: null },
+        )
+
+        expect(result.items).toHaveLength(2)
+        expect(result.hasNextPage).toBe(true)
+        expect(result.totalRecord).toBe(5)
+      })
+
+      it('respects description/type/categoryIds/date-range filters', async () => {
+        const user = await createUser()
+        const category = await createCategory(user.id)
+        await TransactionRepository.create(
+          Transaction.create({
+            userId: user.id,
+            categoryId: category.id,
+            type: TransactionKind.EXPENSE,
+            description: 'Compra no mercado',
+            date: new Date('2026-01-10'),
+            value: 100,
+          }),
+        )
+        await TransactionRepository.create(
+          Transaction.create({
+            userId: user.id,
+            categoryId: category.id,
+            type: TransactionKind.EXPENSE,
+            description: 'Cinema',
+            date: new Date('2026-01-11'),
+            value: 100,
+          }),
+        )
+
+        const result = await TransactionRepository.findAllByUserId(
+          user.id,
+          {
+            startDate: null,
+            endDate: null,
+            description: 'mercado',
+            type: null,
+            categoryIds: null,
+          },
+          { first: 20, after: null },
+        )
+
+        expect(result.totalRecord).toBe(1)
+      })
+
+      it('is scoped to userId (no cross-user leak)', async () => {
+        const userA = await createUser()
+        const userB = await createUser()
+        const categoryA = await createCategory(userA.id)
+        const categoryB = await createCategory(userB.id)
+        await TransactionRepository.create(
+          Transaction.create({
+            userId: userA.id,
+            categoryId: categoryA.id,
+            type: TransactionKind.EXPENSE,
+            description: 'A',
+            date: new Date('2026-01-10'),
+            value: 100,
+          }),
+        )
+        await TransactionRepository.create(
+          Transaction.create({
+            userId: userB.id,
+            categoryId: categoryB.id,
+            type: TransactionKind.EXPENSE,
+            description: 'B',
+            date: new Date('2026-01-10'),
+            value: 100,
+          }),
+        )
+
+        const result = await TransactionRepository.findAllByUserId(
+          userA.id,
+          {
+            startDate: null,
+            endDate: null,
+            description: null,
+            type: null,
+            categoryIds: null,
+          },
+          { first: 20, after: null },
+        )
+
+        expect(result.totalRecord).toBe(1)
+      })
+    })
   })
 
   describe('update', () => {

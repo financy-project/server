@@ -18,6 +18,8 @@ export const findCategoriesByIdsAdapter: FindCategoriesByIdsPort = async (
     id: category.id,
     userId: category.userId,
     title: category.title,
+    description: category.description,
+    icon: category.icon,
     color: category.color,
   }))
 }
