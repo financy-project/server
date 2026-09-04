@@ -15,6 +15,22 @@ export const ListTransactionsValidation = {
 
     const hasStartDate = validated.startDate !== undefined
     const hasEndDate = validated.endDate !== undefined
+    const hasMonth = validated.month !== undefined
+    const hasYear = validated.year !== undefined
+
+    if (hasMonth !== hasYear) {
+      throwFieldError(
+        hasMonth ? 'year' : 'month',
+        'validations.transaction_period_incomplete',
+      )
+    }
+
+    if (hasMonth && hasYear && (hasStartDate || hasEndDate)) {
+      throwFieldError(
+        'month',
+        'validations.transaction_period_conflicts_with_date_range',
+      )
+    }
 
     if (hasStartDate !== hasEndDate) {
       throwFieldError(

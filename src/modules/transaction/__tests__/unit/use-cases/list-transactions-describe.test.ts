@@ -8,10 +8,11 @@ jest.mock('../../../repository/transaction.repository', () => ({
 }))
 jest.mock('@/shared/utils/date-range', () => ({
   getCurrentMonthRange: jest.fn(),
+  getMonthRange: jest.fn(),
 }))
 
 import { TransactionRepository } from '../../../repository/transaction.repository'
-import { getCurrentMonthRange } from '@/shared/utils/date-range'
+import { getMonthRange } from '@/shared/utils/date-range'
 import { ListTransactionsUseCase } from '../../../use-cases/list-transactions.use-case'
 
 const items = [
@@ -36,31 +37,42 @@ describe('ListTransactionsUseCase.listTransactions()', () => {
     })
   })
 
-  it('T-016: defaults to getCurrentMonthRange() when no dates are given', async () => {
+  it('resolves month+year via getMonthRange() and forwards its exact range', async () => {
     const monthRange = {
       startDate: new Date('2026-09-01T00:00:00.000Z'),
       endDate: new Date('2026-09-30T23:59:59.999Z'),
     }
-    ;(getCurrentMonthRange as jest.Mock).mockReturnValue(monthRange)
+    ;(getMonthRange as jest.Mock).mockReturnValue(monthRange)
 
     const result = await ListTransactionsUseCase.listTransactions({
       userId: 'user-1',
       startDate: null,
       endDate: null,
+      month: 9,
+      year: 2026,
+      description: null,
+      type: null,
+      categoryIds: null,
       first: 20,
       after: null,
     })
 
-    expect(getCurrentMonthRange).toHaveBeenCalled()
+    expect(getMonthRange).toHaveBeenCalledWith(2026, 9)
     expect(TransactionRepository.findAllByUserId).toHaveBeenCalledWith(
       'user-1',
-      monthRange,
+      {
+        startDate: monthRange.startDate,
+        endDate: monthRange.endDate,
+        description: null,
+        type: null,
+        categoryIds: null,
+      },
       { first: 20, after: null },
     )
     expect(result.items).toBe(items)
   })
 
-  it('T-016: passes explicit dates through unchanged when given', async () => {
+  it('passes explicit startDate/endDate through unchanged when given (no month/year)', async () => {
     const startDate = new Date('2026-01-01T00:00:00.000Z')
     const endDate = new Date('2026-01-31T23:59:59.999Z')
 
@@ -68,15 +80,81 @@ describe('ListTransactionsUseCase.listTransactions()', () => {
       userId: 'user-1',
       startDate,
       endDate,
+      month: null,
+      year: null,
+      description: null,
+      type: null,
+      categoryIds: null,
       first: 10,
       after: 'cursor-1',
     })
 
-    expect(getCurrentMonthRange).not.toHaveBeenCalled()
+    expect(getMonthRange).not.toHaveBeenCalled()
     expect(TransactionRepository.findAllByUserId).toHaveBeenCalledWith(
       'user-1',
-      { startDate, endDate },
+      {
+        startDate,
+        endDate,
+        description: null,
+        type: null,
+        categoryIds: null,
+      },
       { first: 10, after: 'cursor-1' },
+    )
+  })
+
+  it('calls the repository with null startDate/endDate when neither month/year nor startDate/endDate are given', async () => {
+    await ListTransactionsUseCase.listTransactions({
+      userId: 'user-1',
+      startDate: null,
+      endDate: null,
+      month: null,
+      year: null,
+      description: null,
+      type: null,
+      categoryIds: null,
+      first: 20,
+      after: null,
+    })
+
+    expect(getMonthRange).not.toHaveBeenCalled()
+    expect(TransactionRepository.findAllByUserId).toHaveBeenCalledWith(
+      'user-1',
+      {
+        startDate: null,
+        endDate: null,
+        description: null,
+        type: null,
+        categoryIds: null,
+      },
+      { first: 20, after: null },
+    )
+  })
+
+  it('forwards description/type/categoryIds to the repository unchanged', async () => {
+    await ListTransactionsUseCase.listTransactions({
+      userId: 'user-1',
+      startDate: null,
+      endDate: null,
+      month: null,
+      year: null,
+      description: 'mercado',
+      type: TransactionKind.EXPENSE,
+      categoryIds: ['cat-1', 'cat-2'],
+      first: 20,
+      after: null,
+    })
+
+    expect(TransactionRepository.findAllByUserId).toHaveBeenCalledWith(
+      'user-1',
+      {
+        startDate: null,
+        endDate: null,
+        description: 'mercado',
+        type: TransactionKind.EXPENSE,
+        categoryIds: ['cat-1', 'cat-2'],
+      },
+      { first: 20, after: null },
     )
   })
 })
