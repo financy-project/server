@@ -10,6 +10,7 @@ type PaginatedTransactions = {
   items: Transaction[]
   hasNextPage: boolean
   endCursor: string | null
+  totalRecord: number
 }
 
 export const toTransactionConnection = (
@@ -26,5 +27,6 @@ export const toTransactionConnection = (
     hasNextPage: result.hasNextPage,
     endCursor: result.endCursor,
   }
+  connection.totalRecord = result.totalRecord
   return connection
 }
