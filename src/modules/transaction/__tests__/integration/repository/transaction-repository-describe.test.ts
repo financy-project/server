@@ -122,7 +122,13 @@ describe('TransactionRepository (integration)', () => {
 
       const result = await TransactionRepository.findAllByUserId(
         userA.id,
-        { startDate: new Date('2026-01-01'), endDate: new Date('2026-01-31') },
+        {
+          startDate: new Date('2026-01-01'),
+          endDate: new Date('2026-01-31'),
+          description: null,
+          type: null,
+          categoryIds: null,
+        },
         { first: 20, after: null },
       )
 
@@ -155,7 +161,13 @@ describe('TransactionRepository (integration)', () => {
 
       const firstPage = await TransactionRepository.findAllByUserId(
         user.id,
-        { startDate: new Date('2026-01-01'), endDate: new Date('2026-01-31') },
+        {
+          startDate: new Date('2026-01-01'),
+          endDate: new Date('2026-01-31'),
+          description: null,
+          type: null,
+          categoryIds: null,
+        },
         { first: 2, after: null },
       )
 
@@ -167,7 +179,13 @@ describe('TransactionRepository (integration)', () => {
 
       const secondPage = await TransactionRepository.findAllByUserId(
         user.id,
-        { startDate: new Date('2026-01-01'), endDate: new Date('2026-01-31') },
+        {
+          startDate: new Date('2026-01-01'),
+          endDate: new Date('2026-01-31'),
+          description: null,
+          type: null,
+          categoryIds: null,
+        },
         { first: 2, after: firstPage.endCursor },
       )
 
@@ -178,7 +196,13 @@ describe('TransactionRepository (integration)', () => {
 
       const thirdPage = await TransactionRepository.findAllByUserId(
         user.id,
-        { startDate: new Date('2026-01-01'), endDate: new Date('2026-01-31') },
+        {
+          startDate: new Date('2026-01-01'),
+          endDate: new Date('2026-01-31'),
+          description: null,
+          type: null,
+          categoryIds: null,
+        },
         { first: 2, after: secondPage.endCursor },
       )
 
@@ -187,6 +211,275 @@ describe('TransactionRepository (integration)', () => {
       )
       expect(thirdPage.hasNextPage).toBe(false)
       expect(thirdPage.endCursor).not.toBeNull()
+    })
+
+    describe('filters', () => {
+      it('filters by description (case-insensitive partial match)', async () => {
+        const user = await createUser()
+        const category = await createCategory(user.id)
+        const match = await TransactionRepository.create(
+          Transaction.create({
+            userId: user.id,
+            categoryId: category.id,
+            type: TransactionKind.EXPENSE,
+            description: 'Compra no mercado',
+            date: new Date('2026-01-10'),
+            value: 100,
+          }),
+        )
+        await TransactionRepository.create(
+          Transaction.create({
+            userId: user.id,
+            categoryId: category.id,
+            type: TransactionKind.EXPENSE,
+            description: 'Cinema',
+            date: new Date('2026-01-11'),
+            value: 100,
+          }),
+        )
+
+        const result = await TransactionRepository.findAllByUserId(
+          user.id,
+          {
+            startDate: null,
+            endDate: null,
+            description: 'MERCADO',
+            type: null,
+            categoryIds: null,
+          },
+          { first: 20, after: null },
+        )
+
+        expect(result.items).toHaveLength(1)
+        expect(result.items[0]?.id).toBe(match.id)
+      })
+
+      it('filters by type', async () => {
+        const user = await createUser()
+        const category = await createCategory(user.id)
+        const expense = await TransactionRepository.create(
+          Transaction.create({
+            userId: user.id,
+            categoryId: category.id,
+            type: TransactionKind.EXPENSE,
+            description: 'Expense',
+            date: new Date('2026-01-10'),
+            value: 100,
+          }),
+        )
+        await TransactionRepository.create(
+          Transaction.create({
+            userId: user.id,
+            categoryId: category.id,
+            type: TransactionKind.INCOME,
+            description: 'Income',
+            date: new Date('2026-01-11'),
+            value: 100,
+          }),
+        )
+
+        const result = await TransactionRepository.findAllByUserId(
+          user.id,
+          {
+            startDate: null,
+            endDate: null,
+            description: null,
+            type: TransactionKind.EXPENSE,
+            categoryIds: null,
+          },
+          { first: 20, after: null },
+        )
+
+        expect(result.items).toHaveLength(1)
+        expect(result.items[0]?.id).toBe(expense.id)
+      })
+
+      it('filters by categoryIds', async () => {
+        const user = await createUser()
+        const categoryA = await createCategory(user.id)
+        const categoryB = await createCategory(user.id)
+        const inCategoryA = await TransactionRepository.create(
+          Transaction.create({
+            userId: user.id,
+            categoryId: categoryA.id,
+            type: TransactionKind.EXPENSE,
+            description: 'A',
+            date: new Date('2026-01-10'),
+            value: 100,
+          }),
+        )
+        await TransactionRepository.create(
+          Transaction.create({
+            userId: user.id,
+            categoryId: categoryB.id,
+            type: TransactionKind.EXPENSE,
+            description: 'B',
+            date: new Date('2026-01-11'),
+            value: 100,
+          }),
+        )
+
+        const result = await TransactionRepository.findAllByUserId(
+          user.id,
+          {
+            startDate: null,
+            endDate: null,
+            description: null,
+            type: null,
+            categoryIds: [categoryA.id],
+          },
+          { first: 20, after: null },
+        )
+
+        expect(result.items).toHaveLength(1)
+        expect(result.items[0]?.id).toBe(inCategoryA.id)
+      })
+
+      it('combines description + type + categoryIds + an explicit date range', async () => {
+        const user = await createUser()
+        const category = await createCategory(user.id)
+        const match = await TransactionRepository.create(
+          Transaction.create({
+            userId: user.id,
+            categoryId: category.id,
+            type: TransactionKind.EXPENSE,
+            description: 'Compra no mercado',
+            date: new Date('2026-01-15'),
+            value: 100,
+          }),
+        )
+        // wrong description
+        await TransactionRepository.create(
+          Transaction.create({
+            userId: user.id,
+            categoryId: category.id,
+            type: TransactionKind.EXPENSE,
+            description: 'Cinema',
+            date: new Date('2026-01-15'),
+            value: 100,
+          }),
+        )
+        // wrong type
+        await TransactionRepository.create(
+          Transaction.create({
+            userId: user.id,
+            categoryId: category.id,
+            type: TransactionKind.INCOME,
+            description: 'Compra no mercado',
+            date: new Date('2026-01-15'),
+            value: 100,
+          }),
+        )
+        // outside date range
+        await TransactionRepository.create(
+          Transaction.create({
+            userId: user.id,
+            categoryId: category.id,
+            type: TransactionKind.EXPENSE,
+            description: 'Compra no mercado',
+            date: new Date('2026-02-15'),
+            value: 100,
+          }),
+        )
+
+        const result = await TransactionRepository.findAllByUserId(
+          user.id,
+          {
+            startDate: new Date('2026-01-01'),
+            endDate: new Date('2026-01-31'),
+            description: 'mercado',
+            type: TransactionKind.EXPENSE,
+            categoryIds: [category.id],
+          },
+          { first: 20, after: null },
+        )
+
+        expect(result.items).toHaveLength(1)
+        expect(result.items[0]?.id).toBe(match.id)
+      })
+
+      it('treats an empty categoryIds array as "no filter"', async () => {
+        const user = await createUser()
+        const category = await createCategory(user.id)
+        await TransactionRepository.create(
+          Transaction.create({
+            userId: user.id,
+            categoryId: category.id,
+            type: TransactionKind.EXPENSE,
+            description: 'Only one',
+            date: new Date('2026-01-10'),
+            value: 100,
+          }),
+        )
+
+        const withEmptyArray = await TransactionRepository.findAllByUserId(
+          user.id,
+          {
+            startDate: null,
+            endDate: null,
+            description: null,
+            type: null,
+            categoryIds: [],
+          },
+          { first: 20, after: null },
+        )
+        const withoutFilter = await TransactionRepository.findAllByUserId(
+          user.id,
+          {
+            startDate: null,
+            endDate: null,
+            description: null,
+            type: null,
+            categoryIds: null,
+          },
+          { first: 20, after: null },
+        )
+
+        expect(withEmptyArray.items.map((item) => item.id)).toEqual(
+          withoutFilter.items.map((item) => item.id),
+        )
+      })
+
+      it('returns transactions across all dates when startDate/endDate are both null', async () => {
+        const user = await createUser()
+        const category = await createCategory(user.id)
+        const january = await TransactionRepository.create(
+          Transaction.create({
+            userId: user.id,
+            categoryId: category.id,
+            type: TransactionKind.EXPENSE,
+            description: 'January',
+            date: new Date('2026-01-10'),
+            value: 100,
+          }),
+        )
+        const nextYear = await TransactionRepository.create(
+          Transaction.create({
+            userId: user.id,
+            categoryId: category.id,
+            type: TransactionKind.EXPENSE,
+            description: 'Next year',
+            date: new Date('2027-06-10'),
+            value: 100,
+          }),
+        )
+
+        const result = await TransactionRepository.findAllByUserId(
+          user.id,
+          {
+            startDate: null,
+            endDate: null,
+            description: null,
+            type: null,
+            categoryIds: null,
+          },
+          { first: 20, after: null },
+        )
+
+        expect(result.items.map((item) => item.id).sort()).toEqual(
+          [january.id, nextYear.id].sort(),
+        )
+      })
     })
   })
 
