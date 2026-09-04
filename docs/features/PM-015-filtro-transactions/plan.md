@@ -2,123 +2,237 @@
 
 ## Definition of Ready (DoR) Blueprints
 
-This plan must explicitly define the architectural layers per [docs/architecture/11-dor.md](../../architecture/11-dor.md). Each blueprint below should be fully specified, or marked `**Omitted:**` with justification.
+### Types & Enums Blueprint
+
+**Omitted:** No new enum — the type filter reuses the existing
+`TransactionKind` enum (`src/modules/transaction/enums/transaction-kind.enum.ts`,
+`EXPENSE` / `INCOME`), already registered on the schema. No new named domain
+type either: the extra filter fields are added directly to the existing
+inline `ListTransactionsArgs` / `ListTransactionsInput` shapes (see GraphQL
+and Use-Case Blueprints below), consistent with how `startDate`/`endDate`
+are handled today.
 
 ### Entity Blueprint
 
-**Omitted:** or provide:
+**Omitted:** `Transaction` gains no new property, method, or business rule.
+Filtering is a query-shape concern (which rows come back), not a change to
+what a transaction _is_ or how it behaves.
 
-- **Entity Name(s)**
-- **Properties** (an actual TypeScript type block — all fields implicitly `readonly`)
-- **Methods** (business rules, validations, state transitions — exact names + signatures)
+### Errors & Error Families Blueprint
+
+**Omitted:** A filter combination that matches nothing returns an empty
+`TransactionConnection` (`edges: []`), not an error — this is standard list
+behavior, not a domain-error scenario. Invalid filter _input_ (e.g. `month`
+without `year`) is surfaced through the existing generic `ValidationError`
+(`@/shared/errors`, already used by `ListTransactionsValidation` for the
+`startDate`/`endDate` pairing check) — no new domain error class is needed,
+same precedent as the existing date-range validation.
 
 ### Repository Blueprint
 
-**Omitted:** or provide:
-
-- **Repository Name(s)**
-- **Methods:** Database queries/mutations required (e.g., `findByEmail`, `findManyByIds` for a DataLoader)
-- **Data Mapping:** Prisma conversions needed (database → entity)
+- **Repository Name:** `TransactionRepository` (`src/modules/transaction/repository/transaction.repository.ts`) — existing repository, `findAllByUserId` extended (no new method).
+- **Methods:**
+  - `findAllByUserId(userId, filter, pagination)` — `filter` parameter type extended from `{ startDate: Date; endDate: Date }` to:
+    ```ts
+    type ListTransactionsFilter = {
+      startDate: Date
+      endDate: Date
+      description: string | null
+      type: TransactionKind | null
+      categoryIds: string[] | null
+    }
+    ```
+- **Data Mapping:** the Prisma `where` clause gains three conditional branches, each only added when the corresponding filter is non-null (mirrors the existing conditional `cursor` spread):
+  ```ts
+  where: {
+    userId,
+    date: { gte: filter.startDate, lte: filter.endDate },
+    ...(filter.description
+      ? { description: { contains: filter.description, mode: Prisma.QueryMode.insensitive } }
+      : {}),
+    ...(filter.type ? { type: filter.type } : {}),
+    ...(filter.categoryIds && filter.categoryIds.length > 0
+      ? { categoryId: { in: filter.categoryIds } }
+      : {}),
+    ...(cursor ? { OR: [...] } : {}),
+  }
+  ```
+  `description` uses Postgres case-insensitive `contains` (partial match) per the spec's "busca por descrição". `categoryIds: []` (empty array) is treated as "no filter", not "match nothing" — same semantics as the existing `countByCategoryIds` empty-array short-circuit elsewhere in this repository, kept consistent.
 
 ### Use-Case Blueprint
 
-**Omitted:** or provide:
+- **Use-Case Name:** `ListTransactionsUseCase.listTransactions` (existing, `src/modules/transaction/use-cases/list-transactions.use-case.ts`).
+- **Inputs/Outputs:** input type extended:
+  ```ts
+  type ListTransactionsInput = {
+    userId: string
+    startDate: Date | null
+    endDate: Date | null
+    month: number | null
+    year: number | null
+    description: string | null
+    type: TransactionKind | null
+    categoryIds: string[] | null
+    first: number
+    after: string | null
+  }
+  ```
+  Output (`ListTransactionsResult`) unchanged. Returns entities only, as today.
+- **Orchestration Steps:**
+  1. Resolve `{ startDate, endDate }` per the Decision Table below.
+  2. Call `TransactionRepository.findAllByUserId(input.userId, { startDate, endDate, description: input.description, type: input.type, categoryIds: input.categoryIds }, { first: input.first, after: input.after })`.
+- **Decision Table (period resolution — validation, see Use-Case ↔ Validation split below, already guarantees `month`/`year` are never partially set and never combined with `startDate`/`endDate`, so exactly one row ever applies):**
 
-- **Use-Case Name(s)**
-- **Inputs/Outputs:** Data signature (what it accepts, returns — entities, never GraphQL types)
-- **Orchestration Steps:** Sequence of calls (repositories, services, entities), numbered
-- **Decision Table:** required whenever the use-case branches on more than one condition
-- **Emitted Events:** Domain events fired by this use-case
+  | Condition                                              | Outcome                                                                         |
+  | ------------------------------------------------------ | ------------------------------------------------------------------------------- |
+  | `month != null && year != null`                        | `{ startDate, endDate } = getMonthRange(year, month)`                           |
+  | `startDate != null && endDate != null` (no month/year) | `{ startDate, endDate }` used as-is (existing behavior)                         |
+  | none of the above provided                             | `{ startDate, endDate } = getCurrentMonthRange()` (existing default, unchanged) |
+
+- **Emitted Events:** none — read-only query, no state change.
 
 ### GraphQL Blueprint
 
-**Omitted:** or provide:
+- **Object Type(s):** none new — reuses existing `TransactionConnection` / `TransactionEdge` (`src/modules/transaction/graphql/object-types/transaction-connection.object-type.ts`).
+- **Input Type / Args Type:** `ListTransactionsArgs` (`src/modules/transaction/graphql/args/list-transactions.args.ts`) gains five new fields:
+  ```ts
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500, { message: 'validations.transaction_description_filter_invalid' })
+  description?: string
 
-- **Object Type(s):** name + exact `@Field()` list (name, GraphQL type, nullable?)
-- **Input Type / Args Type:** name + exact `@Field()` + `class-validator` decorator list per field
-- **Resolver Name & Operation:** `@Query`/`@Mutation`/`@FieldResolver`, exact operation name and signature
-- **Mapper:** confirm `toXType()` exists or needs to be created
-- **DataLoader needed?** yes/no — if yes, which relation, which module, which repository method
-- **Complexity cost:** for any list-returning or deeply-nested field
+  @Field(() => TransactionKind, { nullable: true })
+  @IsOptional()
+  @IsEnum(TransactionKind, { message: 'validations.transaction_type_invalid' })
+  type?: TransactionKind
+
+  @Field(() => [ID], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @IsUUID('all', { each: true, message: 'validations.transaction_category_ids_invalid' })
+  categoryIds?: string[]
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  @Min(1, { message: 'validations.transaction_month_invalid' })
+  @Max(12, { message: 'validations.transaction_month_invalid' })
+  month?: number
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  @Min(2000, { message: 'validations.transaction_year_invalid' })
+  @Max(2100, { message: 'validations.transaction_year_invalid' })
+  year?: number
+  ```
+  (`ID`, `IsArray`, `IsUUID`, `MaxLength` need adding to the existing `type-graphql`/`class-validator` imports.) Cross-field checks (`month`/`year` pairing, `month`/`year` vs `startDate`/`endDate` conflict) stay in `ListTransactionsValidation`, not here — same split already used for the existing `startDate`/`endDate` pairing check.
+- **Resolver Name & Operation:** `TransactionResolver.listTransactions` (`@Query(() => TransactionConnection, { complexity: 10 })`, `src/modules/transaction/resolvers/transaction.resolver.ts`) — same operation, signature unchanged (`@Args() args: ListTransactionsArgs`), body updated to read the five new validated fields and pass them into `ListTransactionsUseCase.listTransactions`, defaulting each to `null` when `undefined` (same pattern as the existing `startDate ?? null`).
+- **Mapper:** `toTransactionConnection` (`src/modules/transaction/mappers/transaction-connection.mapper.ts`) — unchanged; it maps the use-case result shape, which is unaffected by filtering.
+- **DataLoader needed? No.** No new relational field is introduced — this only narrows an existing root list query's `where` clause.
+- **Complexity cost:** unchanged (`complexity: 10` on `listTransactions`, already declared) — filtering doesn't change the field's shape (still one paginated list per call), so the existing cost stands; stated explicitly per the DoR rather than left implicit.
 
 ### Domain Events Blueprint
 
-**Omitted:** or provide (required if any Use-Case Blueprint lists an Emitted Event):
-
-- **Event Name**
-- **Payload Shape** (TypeScript type block)
-- **Emitted By:** which use-case, at which step
-- **Subscribed By:** receiver name + module, or "none yet"
-- **Registration:** wired in `src/utils/listenersRegistrator.ts` already, or a new task to add it
-
----
+**Omitted:** No use-case emits or consumes an event here — read-only query.
 
 ## Architectural Decisions
 
-Cover all applicable areas from [docs/architecture/14-feature-planning-checklist.md](../../architecture/14-feature-planning-checklist.md). Mark any area "Not Applicable" with justification rather than omitting it silently.
-
-- **Scope & Requirements:**
-- **Data & State:**
-- **User Experience:**
-- **Testing & Validation:**
-- **Implementation Details** (including DataLoader/complexity/schema.graphql regeneration):
-- **Security Considerations:**
-- **Complex Workflows** (if applicable):
-- **Cross-Cutting Concerns:**
-- **Error Scenarios & Failure Modes:**
-- **Performance & Scale:**
-- **Module Composition:**
-- **Deployment & Operations:**
-- **Backward Compatibility** (if applicable):
+- **Scope & Requirements:** Add optional `description`, `type`, `categoryIds`, `month`, `year` arguments to the `listTransactions` query, combinable with each other and with the existing pagination (`first`/`after`). Success = each filter narrows results correctly alone and in combination; omitting all filters preserves today's exact behavior (current-month default). Out of scope (per `spec.md`): any client/UI change, amount-range filtering, saved filter presets. `month`/`year` is new sugar for period filtering; `startDate`/`endDate` is kept for backward compatibility but the two are mutually exclusive per request (see Use-Case Decision Table) to avoid ambiguous overlapping ranges — no existing client breaks, since `startDate`/`endDate` behavior is untouched when `month`/`year` aren't used.
+- **Data & State:** No new persisted entity, no migration — `Transaction` rows are unchanged; this only adds `where` conditions to an existing read query.
+- **User Experience:** Happy path — combining any subset of the five filters narrows the list as expected. Failure modes, all `extensions.code: 'BAD_USER_INPUT'` (same as the existing date-range checks, via `ValidationError`): `month` without `year` (or vice versa) → `validations.transaction_period_incomplete`; `month`/`year` combined with `startDate`/`endDate` → `validations.transaction_period_conflicts_with_date_range`; `month`/`year` out of range → `validations.transaction_month_invalid` / `validations.transaction_year_invalid`; malformed `categoryIds` entry → `validations.transaction_category_ids_invalid`. All optional/nullable — no breaking change to client ergonomics.
+- **Testing & Validation:** Unit tests for `getMonthRange`, the two new `ListTransactionsValidation` checks, and `ListTransactionsUseCase.listTransactions`'s period-resolution branching (all mocked/pure). Integration tests for `TransactionRepository.findAllByUserId`'s new `where` branches against a real database. E2E tests asserting `listTransactions` filters against the real GraphQL schema, including the two new `BAD_USER_INPUT` sad paths. Security test case: a `categoryIds` filter containing another user's category id returns zero matching rows for those ids (query is still scoped by `userId` — no cross-user leak), covered by the existing `userId` scoping, no new code needed but worth an explicit e2e assertion.
+- **Implementation Details:** Touches only the `transaction` module (`graphql/args`, `validation`, `use-cases`, `repository`, `resolvers`) plus one shared utility (`src/shared/utils/date-range.ts`). No new package dependencies — `class-validator`'s `@IsArray`/`@IsUUID(..., { each: true })` and Prisma's `mode: Prisma.QueryMode.insensitive` are both already available. No relational field added → no `DataLoader`. Not a new list/deeply-nested field → complexity unchanged, stated explicitly above. `schema.graphql` **does** need regenerating (new arguments on `listTransactions`).
+- **Security Considerations:** No new auth surface — filtering rides on `listTransactions`' existing `requireCurrentUser(ctx)` check; every filter is applied on top of the existing `userId` scope in the repository `where` clause, so a filter can narrow but never widen visibility beyond the current user's own transactions. No timing-sensitive comparisons involved (this isn't an auth check). No new rate-limiting concern — same single query, same `complexity: 10` cost regardless of how many filters are combined.
+- **Complex Workflows:** Not Applicable — a single read query with a richer `where` clause, no multi-step process.
+- **Cross-Cutting Concerns:** No new logging, caching, or metrics — same as the existing `listTransactions` query, which has none of its own beyond whatever global request logging already exists.
+- **Error Scenarios & Failure Modes:** Database-down affects this the same as every other query (unhandled, propagates as `INTERNAL_SERVER_ERROR` via the existing `formatError` plugin) — no special-casing. No race conditions: read-only, no write path. No retry/timeout strategy beyond what already exists globally.
+- **Performance & Scale:** Same query shape as today (one `findMany`, `take: first + 1`), just a richer `where`. `description`'s `contains` (case-insensitive) cannot use a standard B-tree index efficiently on Postgres — acceptable at this feature's expected scale (a single user's own transactions, realistically hundreds to low thousands of rows), flagged here rather than silently assumed; a `pg_trgm` index would be the follow-up if this becomes a bottleneck, explicitly out of scope for this feature. `type` and `categoryId` are low-cardinality/already-indexed-adjacent (via the existing FK) filters, negligible cost. Pagination strategy unchanged (cursor-based, already in place).
+- **Module Composition:** Single module (`transaction`) — no cross-module communication needed, no port/adapter/gateway involved. Consistent with the "1 module" case in the checklist.
+- **Deployment & Operations:** No database migration. Rollback = revert the commit(s); purely additive, optional arguments — safe to roll back without data cleanup. No feature flag — small additive change to an existing query. No new monitoring beyond what already exists for `listTransactions`.
+- **Backward Compatibility:** Additive, non-breaking: five new _optional_ arguments on an existing query, no field removed, renamed, or changed in nullability/type. Existing clients calling `listTransactions` with only `startDate`/`endDate`/`first`/`after` (or none at all) see byte-identical behavior. `schema.graphql`'s diff will show only the five new arguments added to `listTransactions` on the `Query` type.
 
 ## Implementation Phases
 
-Each bullet must be traceable to a Blueprint above and carry an exact file path, exact symbol/signature, and exact test cases inline — see [docs/architecture/11-dor.md](../../architecture/11-dor.md)'s granularity rule.
-
 ### Phase 1: Foundation
 
-- [ ] Core entity design
-- [ ] Repository setup
-- [ ] Basic use-case implementation
+- [ ] Add `getMonthRange(year: number, month: number): { startDate: Date; endDate: Date }` to `src/shared/utils/date-range.ts` — `month` is 1-12 (human-indexed); `startDate = new Date(year, month - 1, 1, 0, 0, 0, 0)`, `endDate = new Date(year, month, 0, 23, 59, 59, 999)` (last day of that month, via day-0-of-next-month).
+- [ ] Unit tests for `getMonthRange` (`src/shared/utils/__tests__/unit/date-range-describe.test.ts`, new `describe('getMonthRange()')` block): `getMonthRange(2026, 1)` → Jan 1 00:00:00.000–Jan 31 23:59:59.999; `getMonthRange(2024, 2)` → Feb 1–29 (leap year, 29-day February); `getMonthRange(2026, 4)` → Apr 1–30 (30-day month).
+- [ ] Extend `TransactionRepository.findAllByUserId`'s `filter` parameter (`src/modules/transaction/repository/transaction.repository.ts`) to `{ startDate: Date; endDate: Date; description: string | null; type: TransactionKind | null; categoryIds: string[] | null }`, adding the three conditional `where` branches from the Repository Blueprint above.
+- [ ] Integration tests for the new `TransactionRepository.findAllByUserId` filters (`src/modules/transaction/__tests__/integration/repository/transaction-repository-describe.test.ts`, new `describe` block, `useDatabase()`): filters by `description` (case-insensitive partial match, e.g. `"MERCADO"` matches `"Compra no mercado"`); filters by `type` (only matching `TransactionKind` returned); filters by `categoryIds` (matches transactions in any of the given categories, none from other categories); combines `description` + `type` + `categoryIds` + the existing date range together; `categoryIds: []` behaves as "no filter" (same result as omitting it).
 
 ### Phase 2: Features
 
-- [ ] Primary feature implementation (GraphQL Input/ObjectType/Resolver)
-- [ ] Integration with other modules
-- [ ] Testing
+- [ ] Add `description`, `type`, `categoryIds`, `month`, `year` fields to `ListTransactionsArgs` (`src/modules/transaction/graphql/args/list-transactions.args.ts`) exactly as specified in the GraphQL Blueprint above, adding `ID`, `IsArray`, `IsUUID`, `MaxLength` to the existing imports.
+- [ ] Extend `ListTransactionsValidation.validate` (`src/modules/transaction/validation/list-transactions.validation.ts`) with two checks, alongside the existing `startDate`/`endDate` pairing check: (1) `month` present XOR `year` present → `throwFieldError(hasMonth ? 'year' : 'month', 'validations.transaction_period_incomplete')`; (2) `month`+`year` both present AND (`startDate` or `endDate` present) → `throwFieldError('month', 'validations.transaction_period_conflicts_with_date_range')`.
+- [ ] Unit tests for the two new `ListTransactionsValidation` checks (`src/modules/transaction/__tests__/unit/validation/list-transactions-validation-describe.test.ts`): `month` without `year` throws with path `'year'`; `year` without `month` throws with path `'month'`; `month`+`year` combined with `startDate` throws; `month`+`year` combined with `endDate` throws; `month`+`year` alone (no date range) passes; neither `month`/`year` nor `startDate`/`endDate` still passes (existing behavior preserved).
+- [ ] Extend `ListTransactionsUseCase.listTransactions`'s input type and body (`src/modules/transaction/use-cases/list-transactions.use-case.ts`) per the Use-Case Blueprint's `ListTransactionsInput` type and Decision Table, and forward `description`, `type`, `categoryIds` unchanged into the `TransactionRepository.findAllByUserId` call.
+- [ ] Unit tests for `ListTransactionsUseCase.listTransactions` (`src/modules/transaction/__tests__/unit/use-cases/list-transactions-describe.test.ts`, repository mocked): `month`+`year` given → repository called with `getMonthRange(year, month)`'s exact `{ startDate, endDate }`; `startDate`+`endDate` given (no month/year) → passed through unchanged (existing test, still passing); neither given → falls back to `getCurrentMonthRange()` (existing test, still passing); `description`/`type`/`categoryIds` are forwarded to the repository call unchanged, `null` when not provided.
+- [ ] Update `TransactionResolver.listTransactions` (`src/modules/transaction/resolvers/transaction.resolver.ts`) to read `validated.description`, `validated.type`, `validated.categoryIds`, `validated.month`, `validated.year` (each `?? null`) and pass them into `ListTransactionsUseCase.listTransactions`, alongside the existing `startDate`/`endDate`/`first`/`after`.
 
 ### Phase 3: Polish
 
-- [ ] Edge case handling
-- [ ] DataLoader / complexity tuning (if applicable)
-- [ ] Documentation (`schema.graphql` regenerated if the schema changed)
+- [ ] Add six new i18n keys to `src/services/i18n.service.ts` (both `en` and `pt-BR` maps): `validations.transaction_period_incomplete`, `validations.transaction_period_conflicts_with_date_range`, `validations.transaction_month_invalid`, `validations.transaction_year_invalid`, `validations.transaction_description_filter_invalid`, `validations.transaction_category_ids_invalid`.
+- [ ] E2E tests for `listTransactions` filters (`src/modules/transaction/__tests__/integration/e2e/list-transactions-describe.test.ts`, extending the existing `describe` block, `useDatabase()`): filters by `description` alone; filters by `type` alone; filters by `categoryIds` alone; filters by `month`+`year` alone (replacing the default current-month range); combines `description`+`type`+`categoryIds`+`month`+`year` in one call; a `categoryIds` entry belonging to another user returns no rows for that id (no cross-user leak); `month` without `year` → `errors[].extensions.code: 'BAD_USER_INPUT'`; `month`+`year` combined with `startDate` → `errors[].extensions.code: 'BAD_USER_INPUT'`.
+- [ ] Run `pnpm dev` (or any command that builds the schema) to regenerate `schema.graphql`, then commit the diff (expected: `listTransactions` on the `Query` type gains `categoryIds: [ID!]`, `description: String`, `month: Int`, `type: TransactionKind`, `year: Int` arguments).
+- [ ] Run `pnpm test` and `pnpm build` and confirm both pass clean.
 
 ## Test Cases
 
-Sibling to Implementation Phases, same `### Phase N:` grouping. Every entry must trace to a Decision Table row, Entity method, or GraphQL Blueprint response case already written above.
-
 ### Phase 1: Foundation
 
-- [ ] (test case)
+- [ ] `getMonthRange(2026, 1)` returns Jan 1 00:00:00.000–Jan 31 23:59:59.999
+- [ ] `getMonthRange(2024, 2)` returns Feb 1–29 (leap year)
+- [ ] `getMonthRange(2026, 4)` returns Apr 1–30
+- [ ] `TransactionRepository.findAllByUserId` filters by `description` (case-insensitive partial match)
+- [ ] `TransactionRepository.findAllByUserId` filters by `type`
+- [ ] `TransactionRepository.findAllByUserId` filters by `categoryIds`
+- [ ] `TransactionRepository.findAllByUserId` combines `description` + `type` + `categoryIds` + date range
+- [ ] `TransactionRepository.findAllByUserId` — empty `categoryIds` array behaves as "no filter"
 
 ### Phase 2: Features
 
-- [ ] (test case)
+- [ ] `ListTransactionsValidation` — `month` without `year` throws (`BAD_USER_INPUT`, path `'year'`)
+- [ ] `ListTransactionsValidation` — `year` without `month` throws (`BAD_USER_INPUT`, path `'month'`)
+- [ ] `ListTransactionsValidation` — `month`+`year` combined with `startDate` throws
+- [ ] `ListTransactionsValidation` — `month`+`year` combined with `endDate` throws
+- [ ] `ListTransactionsValidation` — `month`+`year` alone passes
+- [ ] `ListTransactionsValidation` — neither `month`/`year` nor `startDate`/`endDate` passes (existing behavior preserved)
+- [ ] `ListTransactionsUseCase.listTransactions` — `month`+`year` resolves via `getMonthRange`
+- [ ] `ListTransactionsUseCase.listTransactions` — `startDate`+`endDate` passed through unchanged
+- [ ] `ListTransactionsUseCase.listTransactions` — neither provided falls back to `getCurrentMonthRange()`
+- [ ] `ListTransactionsUseCase.listTransactions` — `description`/`type`/`categoryIds` forwarded unchanged to the repository
+
+### Phase 3: Polish
+
+- [ ] `listTransactions` — filters by `description` alone
+- [ ] `listTransactions` — filters by `type` alone
+- [ ] `listTransactions` — filters by `categoryIds` alone
+- [ ] `listTransactions` — filters by `month`+`year` alone
+- [ ] `listTransactions` — combines all five filters in one call
+- [ ] `listTransactions` — a `categoryIds` entry belonging to another user returns no rows for that id
+- [ ] `listTransactions` — `month` without `year` → `extensions.code: 'BAD_USER_INPUT'`
+- [ ] `listTransactions` — `month`+`year` combined with `startDate` → `extensions.code: 'BAD_USER_INPUT'`
 
 ## Dependencies
 
-- List any external dependencies
-- List any internal module dependencies
+- External packages: none new — `class-validator`'s `@IsArray`/`@IsUUID(..., { each: true })` and Prisma's `Prisma.QueryMode.insensitive` are already available in the project's existing dependencies.
+- Internal: none — single-module change, no cross-module ports/adapters/gateways involved.
 
 ## Risks & Mitigations
 
-| Risk   | Impact | Mitigation      |
-| ------ | ------ | --------------- |
-| Risk 1 | High   | Mitigation plan |
+| Risk                                                                                    | Impact | Mitigation                                                                                                                                                                   |
+| --------------------------------------------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `month`/`year` vs `startDate`/`endDate` mutual-exclusivity rule surprises API consumers | Low    | Clear `BAD_USER_INPUT` error with a dedicated i18n message on conflict, covered by unit + e2e tests; documented in this plan                                                 |
+| Unindexed `description` `contains` search degrades at high row counts                   | Low    | Flagged explicitly in Performance & Scale above as an accepted tradeoff at this feature's expected scale; `pg_trgm` index is a documented, explicitly out-of-scope follow-up |
+| Forgetting to regenerate `schema.graphql`                                               | Low    | Explicit Phase 3 task; `pnpm build`/`pnpm test:e2e` both build the schema and would surface a stale-file diff in review                                                      |
 
 ## Success Criteria
 
-- [ ] All acceptance criteria met
-- [ ] Tests passing
-- [ ] `pnpm build` compiles without errors
-- [ ] `schema.graphql` committed if the schema changed
+- [ ] All acceptance criteria in `spec.md` met
+- [ ] New unit tests (`date-range`, `ListTransactionsValidation`, `ListTransactionsUseCase`) passing
+- [ ] New integration test (`TransactionRepository.findAllByUserId` filters) passing
+- [ ] New e2e tests for `listTransactions` filters (happy paths + two sad paths) passing
+- [ ] `pnpm test` and `pnpm build` pass clean
+- [ ] `schema.graphql` regenerated and committed with only the expected additive diff
