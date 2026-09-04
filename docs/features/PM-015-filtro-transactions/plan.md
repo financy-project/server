@@ -35,18 +35,21 @@ same precedent as the existing date-range validation.
   - `findAllByUserId(userId, filter, pagination)` — `filter` parameter type extended from `{ startDate: Date; endDate: Date }` to:
     ```ts
     type ListTransactionsFilter = {
-      startDate: Date
-      endDate: Date
+      startDate: Date | null
+      endDate: Date | null
       description: string | null
       type: TransactionKind | null
       categoryIds: string[] | null
     }
     ```
-- **Data Mapping:** the Prisma `where` clause gains three conditional branches, each only added when the corresponding filter is non-null (mirrors the existing conditional `cursor` spread):
+    `startDate`/`endDate` become nullable (were required `Date`) — see the Use-Case Blueprint's updated Decision Table: "no period filter at all" is now a real, explicit case (return every transaction for the user, paginated), not just an internal implementation detail defaulted away before reaching the repository.
+- **Data Mapping:** the Prisma `where` clause gains four conditional branches, each only added when the corresponding filter is non-null (mirrors the existing conditional `cursor` spread) — the date range itself is now conditional too:
   ```ts
   where: {
     userId,
-    date: { gte: filter.startDate, lte: filter.endDate },
+    ...(filter.startDate && filter.endDate
+      ? { date: { gte: filter.startDate, lte: filter.endDate } }
+      : {}),
     ...(filter.description
       ? { description: { contains: filter.description, mode: Prisma.QueryMode.insensitive } }
       : {}),
@@ -57,7 +60,7 @@ same precedent as the existing date-range validation.
     ...(cursor ? { OR: [...] } : {}),
   }
   ```
-  `description` uses Postgres case-insensitive `contains` (partial match) per the spec's "busca por descrição". `categoryIds: []` (empty array) is treated as "no filter", not "match nothing" — same semantics as the existing `countByCategoryIds` empty-array short-circuit elsewhere in this repository, kept consistent.
+  `description` uses Postgres case-insensitive `contains` (partial match) per the spec's "busca por descrição". `categoryIds: []` (empty array) is treated as "no filter", not "match nothing" — same semantics as the existing `countByCategoryIds` empty-array short-circuit elsewhere in this repository, kept consistent. `startDate`/`endDate` both `null` means no date bound at all — the `userId`-scoped `orderBy: [{ date: 'desc' }, { id: 'desc' }]` + cursor pagination is unaffected and still works correctly across the full, unbounded history.
 
 ### Use-Case Blueprint
 
@@ -83,11 +86,13 @@ same precedent as the existing date-range validation.
   2. Call `TransactionRepository.findAllByUserId(input.userId, { startDate, endDate, description: input.description, type: input.type, categoryIds: input.categoryIds }, { first: input.first, after: input.after })`.
 - **Decision Table (period resolution — validation, see Use-Case ↔ Validation split below, already guarantees `month`/`year` are never partially set and never combined with `startDate`/`endDate`, so exactly one row ever applies):**
 
-  | Condition                                              | Outcome                                                                         |
-  | ------------------------------------------------------ | ------------------------------------------------------------------------------- |
-  | `month != null && year != null`                        | `{ startDate, endDate } = getMonthRange(year, month)`                           |
-  | `startDate != null && endDate != null` (no month/year) | `{ startDate, endDate }` used as-is (existing behavior)                         |
-  | none of the above provided                             | `{ startDate, endDate } = getCurrentMonthRange()` (existing default, unchanged) |
+  | Condition                                              | Outcome                                                                     |
+  | ------------------------------------------------------ | --------------------------------------------------------------------------- |
+  | `month != null && year != null`                        | `{ startDate, endDate } = getMonthRange(year, month)`                       |
+  | `startDate != null && endDate != null` (no month/year) | `{ startDate, endDate }` used as-is (existing behavior)                     |
+  | none of the above provided                             | `{ startDate: null, endDate: null }` — **no date filter, all transactions** |
+
+  **Behavior change vs. today:** the current production default (no `startDate`/`endDate` → silently scoped to the current month via `getCurrentMonthRange()`) is being replaced. Omitting every filter now returns **all** of the user's transactions, paginated — not just the current month's. `getCurrentMonthRange()` is no longer called by this use-case; the utility itself is left in place in `src/shared/utils/date-range.ts` (still tested, available for future reuse) since nothing else in the codebase currently depends on removing it. See Backward Compatibility below — this is a deliberate, requested change to already-shipped behavior, not an oversight.
 
 - **Emitted Events:** none — read-only query, no state change.
 
@@ -139,7 +144,7 @@ same precedent as the existing date-range validation.
 
 ## Architectural Decisions
 
-- **Scope & Requirements:** Add optional `description`, `type`, `categoryIds`, `month`, `year` arguments to the `listTransactions` query, combinable with each other and with the existing pagination (`first`/`after`). Success = each filter narrows results correctly alone and in combination; omitting all filters preserves today's exact behavior (current-month default). Out of scope (per `spec.md`): any client/UI change, amount-range filtering, saved filter presets. `month`/`year` is new sugar for period filtering; `startDate`/`endDate` is kept for backward compatibility but the two are mutually exclusive per request (see Use-Case Decision Table) to avoid ambiguous overlapping ranges — no existing client breaks, since `startDate`/`endDate` behavior is untouched when `month`/`year` aren't used.
+- **Scope & Requirements:** Add optional `description`, `type`, `categoryIds`, `month`, `year` arguments to the `listTransactions` query, combinable with each other and with the existing pagination (`first`/`after`). Success = each filter narrows results correctly alone and in combination; **omitting all filters now returns all of the user's transactions, paginated — this intentionally changes today's default (previously silently scoped to the current month)**, per explicit request during planning. Out of scope (per `spec.md`): any client/UI change, amount-range filtering, saved filter presets. `month`/`year` is new sugar for period filtering; `startDate`/`endDate` is kept, and the two remain mutually exclusive per request (see Use-Case Decision Table) to avoid ambiguous overlapping ranges — `startDate`/`endDate` behavior is untouched when used, only the _no-filter-at-all_ case changes.
 - **Data & State:** No new persisted entity, no migration — `Transaction` rows are unchanged; this only adds `where` conditions to an existing read query.
 - **User Experience:** Happy path — combining any subset of the five filters narrows the list as expected. Failure modes, all `extensions.code: 'BAD_USER_INPUT'` (same as the existing date-range checks, via `ValidationError`): `month` without `year` (or vice versa) → `validations.transaction_period_incomplete`; `month`/`year` combined with `startDate`/`endDate` → `validations.transaction_period_conflicts_with_date_range`; `month`/`year` out of range → `validations.transaction_month_invalid` / `validations.transaction_year_invalid`; malformed `categoryIds` entry → `validations.transaction_category_ids_invalid`. All optional/nullable — no breaking change to client ergonomics.
 - **Testing & Validation:** Unit tests for `getMonthRange`, the two new `ListTransactionsValidation` checks, and `ListTransactionsUseCase.listTransactions`'s period-resolution branching (all mocked/pure). Integration tests for `TransactionRepository.findAllByUserId`'s new `where` branches against a real database. E2E tests asserting `listTransactions` filters against the real GraphQL schema, including the two new `BAD_USER_INPUT` sad paths. Security test case: a `categoryIds` filter containing another user's category id returns zero matching rows for those ids (query is still scoped by `userId` — no cross-user leak), covered by the existing `userId` scoping, no new code needed but worth an explicit e2e assertion.
@@ -148,10 +153,10 @@ same precedent as the existing date-range validation.
 - **Complex Workflows:** Not Applicable — a single read query with a richer `where` clause, no multi-step process.
 - **Cross-Cutting Concerns:** No new logging, caching, or metrics — same as the existing `listTransactions` query, which has none of its own beyond whatever global request logging already exists.
 - **Error Scenarios & Failure Modes:** Database-down affects this the same as every other query (unhandled, propagates as `INTERNAL_SERVER_ERROR` via the existing `formatError` plugin) — no special-casing. No race conditions: read-only, no write path. No retry/timeout strategy beyond what already exists globally.
-- **Performance & Scale:** Same query shape as today (one `findMany`, `take: first + 1`), just a richer `where`. `description`'s `contains` (case-insensitive) cannot use a standard B-tree index efficiently on Postgres — acceptable at this feature's expected scale (a single user's own transactions, realistically hundreds to low thousands of rows), flagged here rather than silently assumed; a `pg_trgm` index would be the follow-up if this becomes a bottleneck, explicitly out of scope for this feature. `type` and `categoryId` are low-cardinality/already-indexed-adjacent (via the existing FK) filters, negligible cost. Pagination strategy unchanged (cursor-based, already in place).
+- **Performance & Scale:** Same query shape as today (one `findMany`, `take: first + 1`), just a richer, now-conditional `where`. The no-filter case no longer bounds the scan by date at all — it relies entirely on cursor pagination (`take: first + 1` + the `date`/`id` cursor `OR`) to keep each individual request cheap; the `userId` scope (already the leading condition) keeps the row set per-user rather than table-wide. `description`'s `contains` (case-insensitive) cannot use a standard B-tree index efficiently on Postgres — acceptable at this feature's expected scale (a single user's own transactions, realistically hundreds to low thousands of rows), flagged here rather than silently assumed; a `pg_trgm` index would be the follow-up if this becomes a bottleneck, explicitly out of scope for this feature. `type` and `categoryId` are low-cardinality/already-indexed-adjacent (via the existing FK) filters, negligible cost. Pagination strategy unchanged (cursor-based, already in place).
 - **Module Composition:** Single module (`transaction`) — no cross-module communication needed, no port/adapter/gateway involved. Consistent with the "1 module" case in the checklist.
 - **Deployment & Operations:** No database migration. Rollback = revert the commit(s); purely additive, optional arguments — safe to roll back without data cleanup. No feature flag — small additive change to an existing query. No new monitoring beyond what already exists for `listTransactions`.
-- **Backward Compatibility:** Additive, non-breaking: five new _optional_ arguments on an existing query, no field removed, renamed, or changed in nullability/type. Existing clients calling `listTransactions` with only `startDate`/`endDate`/`first`/`after` (or none at all) see byte-identical behavior. `schema.graphql`'s diff will show only the five new arguments added to `listTransactions` on the `Query` type.
+- **Backward Compatibility:** Schema-wise additive (five new _optional_ arguments, no field removed/renamed/re-typed) — but **behaviorally breaking for the zero-argument call specifically**: `schema.graphql`'s diff still shows only the five new arguments, yet any existing client calling `listTransactions` with no `startDate`/`endDate` today (relying on the implicit current-month scope) will start receiving its entire transaction history instead, paginated. This is a deliberate, explicitly requested change, not an oversight — flagged here per the checklist's "changing existing behavior in place" anti-pattern so it isn't missed in review. No client repo change is in scope for this feature (`spec.md`), so any client that depends on the old implicit scoping must be updated separately to pass `month`/`year` (or `startDate`/`endDate`) itself if it still wants a bounded default — call this out to the client team before merging.
 
 ## Implementation Phases
 
@@ -159,8 +164,8 @@ same precedent as the existing date-range validation.
 
 - [ ] Add `getMonthRange(year: number, month: number): { startDate: Date; endDate: Date }` to `src/shared/utils/date-range.ts` — `month` is 1-12 (human-indexed); `startDate = new Date(year, month - 1, 1, 0, 0, 0, 0)`, `endDate = new Date(year, month, 0, 23, 59, 59, 999)` (last day of that month, via day-0-of-next-month).
 - [ ] Unit tests for `getMonthRange` (`src/shared/utils/__tests__/unit/date-range-describe.test.ts`, new `describe('getMonthRange()')` block): `getMonthRange(2026, 1)` → Jan 1 00:00:00.000–Jan 31 23:59:59.999; `getMonthRange(2024, 2)` → Feb 1–29 (leap year, 29-day February); `getMonthRange(2026, 4)` → Apr 1–30 (30-day month).
-- [ ] Extend `TransactionRepository.findAllByUserId`'s `filter` parameter (`src/modules/transaction/repository/transaction.repository.ts`) to `{ startDate: Date; endDate: Date; description: string | null; type: TransactionKind | null; categoryIds: string[] | null }`, adding the three conditional `where` branches from the Repository Blueprint above.
-- [ ] Integration tests for the new `TransactionRepository.findAllByUserId` filters (`src/modules/transaction/__tests__/integration/repository/transaction-repository-describe.test.ts`, new `describe` block, `useDatabase()`): filters by `description` (case-insensitive partial match, e.g. `"MERCADO"` matches `"Compra no mercado"`); filters by `type` (only matching `TransactionKind` returned); filters by `categoryIds` (matches transactions in any of the given categories, none from other categories); combines `description` + `type` + `categoryIds` + the existing date range together; `categoryIds: []` behaves as "no filter" (same result as omitting it).
+- [ ] Extend `TransactionRepository.findAllByUserId`'s `filter` parameter (`src/modules/transaction/repository/transaction.repository.ts`) to `{ startDate: Date | null; endDate: Date | null; description: string | null; type: TransactionKind | null; categoryIds: string[] | null }`, adding the four conditional `where` branches (date range included) from the Repository Blueprint above.
+- [ ] Integration tests for the new `TransactionRepository.findAllByUserId` filters (`src/modules/transaction/__tests__/integration/repository/transaction-repository-describe.test.ts`, new `describe` block, `useDatabase()`): filters by `description` (case-insensitive partial match, e.g. `"MERCADO"` matches `"Compra no mercado"`); filters by `type` (only matching `TransactionKind` returned); filters by `categoryIds` (matches transactions in any of the given categories, none from other categories); combines `description` + `type` + `categoryIds` + an explicit date range together; `categoryIds: []` behaves as "no filter" (same result as omitting it); `startDate`/`endDate` both `null` returns transactions across all dates (no date bound applied).
 
 ### Phase 2: Features
 
@@ -168,13 +173,13 @@ same precedent as the existing date-range validation.
 - [ ] Extend `ListTransactionsValidation.validate` (`src/modules/transaction/validation/list-transactions.validation.ts`) with two checks, alongside the existing `startDate`/`endDate` pairing check: (1) `month` present XOR `year` present → `throwFieldError(hasMonth ? 'year' : 'month', 'validations.transaction_period_incomplete')`; (2) `month`+`year` both present AND (`startDate` or `endDate` present) → `throwFieldError('month', 'validations.transaction_period_conflicts_with_date_range')`.
 - [ ] Unit tests for the two new `ListTransactionsValidation` checks (`src/modules/transaction/__tests__/unit/validation/list-transactions-validation-describe.test.ts`): `month` without `year` throws with path `'year'`; `year` without `month` throws with path `'month'`; `month`+`year` combined with `startDate` throws; `month`+`year` combined with `endDate` throws; `month`+`year` alone (no date range) passes; neither `month`/`year` nor `startDate`/`endDate` still passes (existing behavior preserved).
 - [ ] Extend `ListTransactionsUseCase.listTransactions`'s input type and body (`src/modules/transaction/use-cases/list-transactions.use-case.ts`) per the Use-Case Blueprint's `ListTransactionsInput` type and Decision Table, and forward `description`, `type`, `categoryIds` unchanged into the `TransactionRepository.findAllByUserId` call.
-- [ ] Unit tests for `ListTransactionsUseCase.listTransactions` (`src/modules/transaction/__tests__/unit/use-cases/list-transactions-describe.test.ts`, repository mocked): `month`+`year` given → repository called with `getMonthRange(year, month)`'s exact `{ startDate, endDate }`; `startDate`+`endDate` given (no month/year) → passed through unchanged (existing test, still passing); neither given → falls back to `getCurrentMonthRange()` (existing test, still passing); `description`/`type`/`categoryIds` are forwarded to the repository call unchanged, `null` when not provided.
+- [ ] Unit tests for `ListTransactionsUseCase.listTransactions` (`src/modules/transaction/__tests__/unit/use-cases/list-transactions-describe.test.ts`, repository mocked): `month`+`year` given → repository called with `getMonthRange(year, month)`'s exact `{ startDate, endDate }`; `startDate`+`endDate` given (no month/year) → passed through unchanged; neither given → repository called with `{ startDate: null, endDate: null }` (**updates/replaces the existing "falls back to `getCurrentMonthRange()`" test** — that assertion no longer holds); `description`/`type`/`categoryIds` are forwarded to the repository call unchanged, `null` when not provided.
 - [ ] Update `TransactionResolver.listTransactions` (`src/modules/transaction/resolvers/transaction.resolver.ts`) to read `validated.description`, `validated.type`, `validated.categoryIds`, `validated.month`, `validated.year` (each `?? null`) and pass them into `ListTransactionsUseCase.listTransactions`, alongside the existing `startDate`/`endDate`/`first`/`after`.
 
 ### Phase 3: Polish
 
 - [ ] Add six new i18n keys to `src/services/i18n.service.ts` (both `en` and `pt-BR` maps): `validations.transaction_period_incomplete`, `validations.transaction_period_conflicts_with_date_range`, `validations.transaction_month_invalid`, `validations.transaction_year_invalid`, `validations.transaction_description_filter_invalid`, `validations.transaction_category_ids_invalid`.
-- [ ] E2E tests for `listTransactions` filters (`src/modules/transaction/__tests__/integration/e2e/list-transactions-describe.test.ts`, extending the existing `describe` block, `useDatabase()`): filters by `description` alone; filters by `type` alone; filters by `categoryIds` alone; filters by `month`+`year` alone (replacing the default current-month range); combines `description`+`type`+`categoryIds`+`month`+`year` in one call; a `categoryIds` entry belonging to another user returns no rows for that id (no cross-user leak); `month` without `year` → `errors[].extensions.code: 'BAD_USER_INPUT'`; `month`+`year` combined with `startDate` → `errors[].extensions.code: 'BAD_USER_INPUT'`.
+- [ ] E2E tests for `listTransactions` filters (`src/modules/transaction/__tests__/integration/e2e/list-transactions-describe.test.ts`, extending the existing `describe` block, `useDatabase()`): filters by `description` alone; filters by `type` alone; filters by `categoryIds` alone; filters by `month`+`year` alone; combines `description`+`type`+`categoryIds`+`month`+`year` in one call; **no filters at all returns transactions from every period, not just the current month** (create a transaction dated outside the current month and assert it's included — this is the existing "current-month default" test, updated to assert the new no-bound behavior instead); a `categoryIds` entry belonging to another user returns no rows for that id (no cross-user leak); `month` without `year` → `errors[].extensions.code: 'BAD_USER_INPUT'`; `month`+`year` combined with `startDate` → `errors[].extensions.code: 'BAD_USER_INPUT'`.
 - [ ] Run `pnpm dev` (or any command that builds the schema) to regenerate `schema.graphql`, then commit the diff (expected: `listTransactions` on the `Query` type gains `categoryIds: [ID!]`, `description: String`, `month: Int`, `type: TransactionKind`, `year: Int` arguments).
 - [ ] Run `pnpm test` and `pnpm build` and confirm both pass clean.
 
@@ -188,8 +193,9 @@ same precedent as the existing date-range validation.
 - [ ] `TransactionRepository.findAllByUserId` filters by `description` (case-insensitive partial match)
 - [ ] `TransactionRepository.findAllByUserId` filters by `type`
 - [ ] `TransactionRepository.findAllByUserId` filters by `categoryIds`
-- [ ] `TransactionRepository.findAllByUserId` combines `description` + `type` + `categoryIds` + date range
+- [ ] `TransactionRepository.findAllByUserId` combines `description` + `type` + `categoryIds` + an explicit date range
 - [ ] `TransactionRepository.findAllByUserId` — empty `categoryIds` array behaves as "no filter"
+- [ ] `TransactionRepository.findAllByUserId` — `startDate`/`endDate` both `null` returns transactions across all dates
 
 ### Phase 2: Features
 
@@ -201,7 +207,7 @@ same precedent as the existing date-range validation.
 - [ ] `ListTransactionsValidation` — neither `month`/`year` nor `startDate`/`endDate` passes (existing behavior preserved)
 - [ ] `ListTransactionsUseCase.listTransactions` — `month`+`year` resolves via `getMonthRange`
 - [ ] `ListTransactionsUseCase.listTransactions` — `startDate`+`endDate` passed through unchanged
-- [ ] `ListTransactionsUseCase.listTransactions` — neither provided falls back to `getCurrentMonthRange()`
+- [ ] `ListTransactionsUseCase.listTransactions` — neither provided → repository called with `{ startDate: null, endDate: null }` (no date bound)
 - [ ] `ListTransactionsUseCase.listTransactions` — `description`/`type`/`categoryIds` forwarded unchanged to the repository
 
 ### Phase 3: Polish
@@ -210,6 +216,7 @@ same precedent as the existing date-range validation.
 - [ ] `listTransactions` — filters by `type` alone
 - [ ] `listTransactions` — filters by `categoryIds` alone
 - [ ] `listTransactions` — filters by `month`+`year` alone
+- [ ] `listTransactions` — no filters at all returns transactions from every period, not just the current month
 - [ ] `listTransactions` — combines all five filters in one call
 - [ ] `listTransactions` — a `categoryIds` entry belonging to another user returns no rows for that id
 - [ ] `listTransactions` — `month` without `year` → `extensions.code: 'BAD_USER_INPUT'`
@@ -222,11 +229,12 @@ same precedent as the existing date-range validation.
 
 ## Risks & Mitigations
 
-| Risk                                                                                    | Impact | Mitigation                                                                                                                                                                   |
-| --------------------------------------------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `month`/`year` vs `startDate`/`endDate` mutual-exclusivity rule surprises API consumers | Low    | Clear `BAD_USER_INPUT` error with a dedicated i18n message on conflict, covered by unit + e2e tests; documented in this plan                                                 |
-| Unindexed `description` `contains` search degrades at high row counts                   | Low    | Flagged explicitly in Performance & Scale above as an accepted tradeoff at this feature's expected scale; `pg_trgm` index is a documented, explicitly out-of-scope follow-up |
-| Forgetting to regenerate `schema.graphql`                                               | Low    | Explicit Phase 3 task; `pnpm build`/`pnpm test:e2e` both build the schema and would surface a stale-file diff in review                                                      |
+| Risk                                                                                                                                           | Impact     | Mitigation                                                                                                                                                                                                                                                                                                       |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Removing the implicit current-month default breaks any existing client that relies on it (unbounded result set where it expected "this month") | **Medium** | Deliberate, explicitly requested change — called out in Scope & Requirements and Backward Compatibility above; the client team should be notified before this ships, since it's a behavioral change with no corresponding schema signal (`gh issue comment` on the tracking issue serves as that notice for now) |
+| `month`/`year` vs `startDate`/`endDate` mutual-exclusivity rule surprises API consumers                                                        | Low        | Clear `BAD_USER_INPUT` error with a dedicated i18n message on conflict, covered by unit + e2e tests; documented in this plan                                                                                                                                                                                     |
+| Unindexed `description` `contains` search degrades at high row counts                                                                          | Low        | Flagged explicitly in Performance & Scale above as an accepted tradeoff at this feature's expected scale; `pg_trgm` index is a documented, explicitly out-of-scope follow-up                                                                                                                                     |
+| Forgetting to regenerate `schema.graphql`                                                                                                      | Low        | Explicit Phase 3 task; `pnpm build`/`pnpm test:e2e` both build the schema and would surface a stale-file diff in review                                                                                                                                                                                          |
 
 ## Success Criteria
 
