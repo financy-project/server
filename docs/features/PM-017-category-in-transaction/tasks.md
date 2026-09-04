@@ -1,0 +1,28 @@
+# Category in Transaction - PM-017 - Tasks
+
+Generated from `plan.md`'s `## Implementation Phases` — each bullet copied verbatim, prefixed with a `B-NNN` id.
+
+## Phase 1: Foundation
+
+- [x] B-001: Extend `CategoryDTO` (`src/modules/transaction/ports/find-categories-by-ids.port.ts`) to add `description: string | null` and `icon: string`, per the Repository Blueprint's port shape above.
+- [x] B-002: Extend `findCategoriesByIdsAdapter` (`src/modules/category/adapters/find-categories-by-ids.adapter.ts`) to map `description` and `icon` from `CategoryRepository.findManyByIds`'s `Category` entities into the returned `CategoryDTO[]`.
+- [x] B-003: Unit tests for `findCategoriesByIdsAdapter`'s widened mapping (`src/modules/category/__tests__/unit/adapters/find-categories-by-ids-adapter-describe.test.ts`, extend the existing test): mapped result includes `description` (both a string value and a `null` value across the two fixture categories already in the test) and `icon` alongside the existing `id`/`userId`/`title`/`color`.
+- [x] B-004: Extend `TransactionRepository.findAllByUserId` (`src/modules/transaction/repository/transaction.repository.ts`) to also return `totalRecord: number`, per the Repository Blueprint above: extract the four conditional `where` branches into a `baseWhere` built once (excluding the cursor `OR`), run `prisma.transaction.findMany({ where: { ...baseWhere, ...(cursor ? { OR: [...] } : {}) }, ... })` and `prisma.transaction.count({ where: baseWhere })` via `Promise.all`, return `{ items, hasNextPage, endCursor, totalRecord }`.
+- [x] B-005: Integration tests for `TransactionRepository.findAllByUserId`'s `totalRecord` (`src/modules/transaction/__tests__/integration/repository/transaction-repository-describe.test.ts`, new `describe('totalRecord')` block nested under the existing `findAllByUserId` describe): `totalRecord` equals the full filtered-match count when `first` is smaller than the match count (e.g. 5 matching transactions, `first: 2` → `totalRecord: 5`, `items` length 2, `hasNextPage: true`); `totalRecord` respects `description`/`type`/`categoryIds`/date-range filters (only counts matches, not the user's full transaction count); `totalRecord` is scoped to `userId` (another user's matching transactions aren't counted).
+
+## Phase 2: Features
+
+- [x] B-006: Add `description` and `icon` fields to `TransactionCategoryType` (`src/modules/transaction/graphql/object-types/transaction-category.object-type.ts`): `@Field(() => String, { nullable: true }) description?: string | null` and `@Field() icon!: string`, appended after the existing `color` field.
+- [x] B-007: Add `totalRecord` field to `TransactionConnection` (`src/modules/transaction/graphql/object-types/transaction-connection.object-type.ts`): `@Field(() => Int) totalRecord!: number`, adding `Int` to the existing `type-graphql` import.
+- [x] B-008: Update `toTransactionCategoryType` (`src/modules/transaction/mappers/transaction.mapper.ts`) to also map `description` and `icon` from the `CategoryDTO` argument.
+- [x] B-009: Update `toTransactionConnection` (`src/modules/transaction/mappers/transaction-connection.mapper.ts`) to set `connection.totalRecord = result.totalRecord`; extend its local `PaginatedTransactions` type with `totalRecord: number`.
+- [x] B-010: Extend `ListTransactionsUseCase`'s `ListTransactionsResult` type (`src/modules/transaction/use-cases/list-transactions.use-case.ts`) to add `totalRecord: number`, per the Use-Case Blueprint (no body change needed).
+- [x] B-011: Unit tests: extend `toTransactionCategoryType`'s test (`src/modules/transaction/__tests__/unit/mappers/transaction-mapper-describe.test.ts`) asserting `description` (including a `null` case) and `icon` are mapped; add `src/modules/transaction/__tests__/unit/mappers/transaction-connection-mapper-describe.test.ts` asserting `toTransactionConnection` maps `totalRecord` unchanged from the input result alongside `edges`/`pageInfo`.
+- [x] B-012: Unit test: extend `ListTransactionsUseCase.listTransactions`'s tests (`src/modules/transaction/__tests__/unit/use-cases/list-transactions-describe.test.ts`) asserting the resolved result's `totalRecord` is exactly what the mocked `TransactionRepository.findAllByUserId` returned.
+- [x] B-013: Bump `listTransactions`'s declared `complexity` from `10` to `12` on `TransactionResolver.listTransactions` (`src/modules/transaction/resolvers/transaction.resolver.ts`), per the GraphQL Blueprint's Complexity cost above.
+
+## Phase 3: Polish
+
+- [x] B-014: E2E tests for `listTransactions` (`src/modules/transaction/__tests__/integration/e2e/list-transactions-describe.test.ts`, extend the `LIST_TRANSACTIONS` document to select `category { id title description icon color }` and `totalRecord`, extend the existing `describe` block): `category.description`/`category.icon` are returned for a transaction with a category; `category` still resolves `null` for a transaction without one; `totalRecord` equals the full filtered-match count while `edges` only holds the current page (create more transactions than `first`); `totalRecord` changes correctly as filters narrow the result set; `totalRecord` never includes another user's transactions.
+- [ ] B-015: Run `pnpm dev` (or any command that builds the schema) to regenerate `schema.graphql`, then commit the diff (expected: `TransactionCategoryType` gains `description: String` and `icon: String!`; `TransactionConnection` gains `totalRecord: Int!`; the `complexity` bump is not visible in `schema.graphql`, since `complexity` isn't part of the printed SDL).
+- [x] B-016: Run `pnpm test` and `pnpm build` and confirm both pass clean.

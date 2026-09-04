@@ -34,7 +34,32 @@ describe('ListTransactionsUseCase.listTransactions()', () => {
       items,
       hasNextPage: false,
       endCursor: null,
+      totalRecord: 1,
     })
+  })
+
+  it('resolves totalRecord exactly as returned by the repository', async () => {
+    ;(TransactionRepository.findAllByUserId as jest.Mock).mockResolvedValue({
+      items,
+      hasNextPage: false,
+      endCursor: null,
+      totalRecord: 42,
+    })
+
+    const result = await ListTransactionsUseCase.listTransactions({
+      userId: 'user-1',
+      startDate: null,
+      endDate: null,
+      month: null,
+      year: null,
+      description: null,
+      type: null,
+      categoryIds: null,
+      first: 20,
+      after: null,
+    })
+
+    expect(result.totalRecord).toBe(42)
   })
 
   it('resolves month+year via getMonthRange() and forwards its exact range', async () => {

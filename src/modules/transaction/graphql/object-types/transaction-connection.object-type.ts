@@ -1,4 +1,4 @@
-import { Field, ObjectType } from 'type-graphql'
+import { Field, Int, ObjectType } from 'type-graphql'
 import { PageInfo } from '@/shared/graphql/object-types'
 import { TransactionType } from './transaction.object-type'
 
@@ -18,4 +18,7 @@ export class TransactionConnection {
 
   @Field(() => PageInfo)
   pageInfo!: PageInfo
+
+  @Field(() => Int)
+  totalRecord!: number
 }

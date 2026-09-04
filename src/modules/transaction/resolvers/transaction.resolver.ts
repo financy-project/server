@@ -57,7 +57,7 @@ export class TransactionResolver {
     return toTransactionType(transaction)
   }
 
-  @Query(() => TransactionConnection, { complexity: 10 })
+  @Query(() => TransactionConnection, { complexity: 12 })
   async listTransactions(
     @Args() args: ListTransactionsArgs,
     @Ctx() ctx: GraphQLContext,

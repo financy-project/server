@@ -6,6 +6,8 @@ export type CategoryDTO = {
   id: string
   userId: string
   title: string
+  description: string | null
+  icon: string
   color: string
 }
 

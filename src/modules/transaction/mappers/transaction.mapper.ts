@@ -26,6 +26,8 @@ export const toTransactionCategoryType = (
   const type = new TransactionCategoryType()
   type.id = category.id
   type.title = category.title
+  type.description = category.description
+  type.icon = category.icon
   type.color = category.color
   return type
 }

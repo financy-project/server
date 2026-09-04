@@ -54,39 +54,47 @@ const findAllByUserId = async (
   items: Transaction[]
   hasNextPage: boolean
   endCursor: string | null
+  totalRecord: number
 }> => {
   const cursor = pagination.after ? decodeCursor(pagination.after) : null
 
-  const rows = await prisma.transaction.findMany({
-    where: {
-      userId,
-      ...(filter.startDate && filter.endDate
-        ? { date: { gte: filter.startDate, lte: filter.endDate } }
-        : {}),
-      ...(filter.description
-        ? {
-            description: {
-              contains: filter.description,
-              mode: Prisma.QueryMode.insensitive,
-            },
-          }
-        : {}),
-      ...(filter.type ? { type: filter.type } : {}),
-      ...(filter.categoryIds && filter.categoryIds.length > 0
-        ? { categoryId: { in: filter.categoryIds } }
-        : {}),
-      ...(cursor
-        ? {
-            OR: [
-              { date: { lt: cursor.date } },
-              { date: cursor.date, id: { lt: cursor.id } },
-            ],
-          }
-        : {}),
-    },
-    orderBy: [{ date: 'desc' }, { id: 'desc' }],
-    take: pagination.first + 1,
-  })
+  const baseWhere: Prisma.TransactionWhereInput = {
+    userId,
+    ...(filter.startDate && filter.endDate
+      ? { date: { gte: filter.startDate, lte: filter.endDate } }
+      : {}),
+    ...(filter.description
+      ? {
+          description: {
+            contains: filter.description,
+            mode: Prisma.QueryMode.insensitive,
+          },
+        }
+      : {}),
+    ...(filter.type ? { type: filter.type } : {}),
+    ...(filter.categoryIds && filter.categoryIds.length > 0
+      ? { categoryId: { in: filter.categoryIds } }
+      : {}),
+  }
+
+  const [rows, totalRecord] = await Promise.all([
+    prisma.transaction.findMany({
+      where: {
+        ...baseWhere,
+        ...(cursor
+          ? {
+              OR: [
+                { date: { lt: cursor.date } },
+                { date: cursor.date, id: { lt: cursor.id } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: [{ date: 'desc' }, { id: 'desc' }],
+      take: pagination.first + 1,
+    }),
+    prisma.transaction.count({ where: baseWhere }),
+  ])
 
   const hasNextPage = rows.length > pagination.first
   const items = (hasNextPage ? rows.slice(0, pagination.first) : rows).map(
@@ -97,7 +105,7 @@ const findAllByUserId = async (
     ? encodeCursor({ date: lastItem.date, id: lastItem.id })
     : null
 
-  return { items, hasNextPage, endCursor }
+  return { items, hasNextPage, endCursor, totalRecord }
 }
 
 const update = async (
