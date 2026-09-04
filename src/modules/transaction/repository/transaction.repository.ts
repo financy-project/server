@@ -42,7 +42,13 @@ const findById = async (id: string): Promise<Transaction> => {
 
 const findAllByUserId = async (
   userId: string,
-  filter: { startDate: Date; endDate: Date },
+  filter: {
+    startDate: Date | null
+    endDate: Date | null
+    description: string | null
+    type: TransactionKind | null
+    categoryIds: string[] | null
+  },
   pagination: { first: number; after: string | null },
 ): Promise<{
   items: Transaction[]
@@ -54,7 +60,21 @@ const findAllByUserId = async (
   const rows = await prisma.transaction.findMany({
     where: {
       userId,
-      date: { gte: filter.startDate, lte: filter.endDate },
+      ...(filter.startDate && filter.endDate
+        ? { date: { gte: filter.startDate, lte: filter.endDate } }
+        : {}),
+      ...(filter.description
+        ? {
+            description: {
+              contains: filter.description,
+              mode: Prisma.QueryMode.insensitive,
+            },
+          }
+        : {}),
+      ...(filter.type ? { type: filter.type } : {}),
+      ...(filter.categoryIds && filter.categoryIds.length > 0
+        ? { categoryId: { in: filter.categoryIds } }
+        : {}),
       ...(cursor
         ? {
             OR: [

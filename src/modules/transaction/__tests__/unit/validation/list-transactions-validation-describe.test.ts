@@ -86,4 +86,70 @@ describe('ListTransactionsValidation.validate()', () => {
       ])
     }
   })
+
+  it('throws ValidationError with path "year" when month is given without year', async () => {
+    try {
+      await ListTransactionsValidation.validate({ month: 1 } as never)
+      throw new Error('expected validate() to throw')
+    } catch (error) {
+      expect(error).toBeInstanceOf(ValidationError)
+      expect((error as ValidationError).metadata?.['errors']).toEqual([
+        expect.objectContaining({ path: 'year' }),
+      ])
+    }
+  })
+
+  it('throws ValidationError with path "month" when year is given without month', async () => {
+    try {
+      await ListTransactionsValidation.validate({ year: 2026 } as never)
+      throw new Error('expected validate() to throw')
+    } catch (error) {
+      expect(error).toBeInstanceOf(ValidationError)
+      expect((error as ValidationError).metadata?.['errors']).toEqual([
+        expect.objectContaining({ path: 'month' }),
+      ])
+    }
+  })
+
+  it('throws ValidationError with path "month" when month+year are combined with startDate', async () => {
+    try {
+      await ListTransactionsValidation.validate({
+        month: 1,
+        year: 2026,
+        startDate: new Date('2026-01-01'),
+      } as never)
+      throw new Error('expected validate() to throw')
+    } catch (error) {
+      expect(error).toBeInstanceOf(ValidationError)
+      expect((error as ValidationError).metadata?.['errors']).toEqual([
+        expect.objectContaining({ path: 'month' }),
+      ])
+    }
+  })
+
+  it('throws ValidationError with path "month" when month+year are combined with endDate', async () => {
+    try {
+      await ListTransactionsValidation.validate({
+        month: 1,
+        year: 2026,
+        endDate: new Date('2026-01-31'),
+      } as never)
+      throw new Error('expected validate() to throw')
+    } catch (error) {
+      expect(error).toBeInstanceOf(ValidationError)
+      expect((error as ValidationError).metadata?.['errors']).toEqual([
+        expect.objectContaining({ path: 'month' }),
+      ])
+    }
+  })
+
+  it('passes when month+year are provided alone (no date range)', async () => {
+    const result = await ListTransactionsValidation.validate({
+      month: 1,
+      year: 2026,
+    } as never)
+
+    expect(result.month).toBe(1)
+    expect(result.year).toBe(2026)
+  })
 })

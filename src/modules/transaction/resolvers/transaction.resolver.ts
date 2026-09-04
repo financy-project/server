@@ -68,6 +68,11 @@ export class TransactionResolver {
       userId,
       startDate: validated.startDate ?? null,
       endDate: validated.endDate ?? null,
+      month: validated.month ?? null,
+      year: validated.year ?? null,
+      description: validated.description ?? null,
+      type: validated.type ?? null,
+      categoryIds: validated.categoryIds ?? null,
       first: validated.first ?? 20,
       after: validated.after ?? null,
     })

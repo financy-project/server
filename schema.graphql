@@ -63,7 +63,7 @@ type PageInfo {
 type Query {
   health: HealthStatusType!
   listCategories: [CategoryType!]!
-  listTransactions(after: String, endDate: DateTimeISO, first: Int = 20, startDate: DateTimeISO): TransactionConnection!
+  listTransactions(after: String, categoryIds: [ID!], description: String, endDate: DateTimeISO, first: Int = 20, month: Int, startDate: DateTimeISO, type: TransactionKind, year: Int): TransactionConnection!
 }
 
 input RegisterUserInput {
