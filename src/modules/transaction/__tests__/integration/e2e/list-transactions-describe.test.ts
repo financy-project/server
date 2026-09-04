@@ -20,12 +20,22 @@ const LIST_TRANSACTIONS = `
     $endDate: DateTimeISO
     $first: Int
     $after: String
+    $description: String
+    $type: TransactionKind
+    $categoryIds: [ID!]
+    $month: Int
+    $year: Int
   ) {
     listTransactions(
       startDate: $startDate
       endDate: $endDate
       first: $first
       after: $after
+      description: $description
+      type: $type
+      categoryIds: $categoryIds
+      month: $month
+      year: $year
     ) {
       edges {
         cursor
@@ -136,7 +146,7 @@ describe('listTransactions query (e2e)', () => {
     expect(descriptions).not.toContain(descB)
   })
 
-  it('T-021: defaults to the current month when no date range is given', async () => {
+  it('T-021: no filters at all returns transactions from every period, not just the current month', async () => {
     const user = await createUser()
     const category = await createCategory(user.id)
 
@@ -164,7 +174,272 @@ describe('listTransactions query (e2e)', () => {
     }
     const descriptions = result.edges.map((edge) => edge.node.description)
     expect(descriptions).toContain(currentDesc)
-    expect(descriptions).not.toContain(pastDesc)
+    expect(descriptions).toContain(pastDesc)
+  })
+
+  it('T-021: filters by description alone', async () => {
+    const user = await createUser()
+    const category = await createCategory(user.id)
+
+    const matchDesc = `Compra no mercado ${generateUUID()}`
+    const otherDesc = `Cinema-${generateUUID()}`
+    await createTransaction(user.id, category.id, new Date(), matchDesc)
+    await createTransaction(user.id, category.id, new Date(), otherDesc)
+
+    const response = await server.executeOperation(
+      {
+        query: LIST_TRANSACTIONS,
+        variables: { description: 'MERCADO' },
+      },
+      { contextValue: buildContext(user.id) },
+    )
+
+    expect(response.body.kind).toBe('single')
+    if (response.body.kind !== 'single') return
+
+    expect(response.body.singleResult.errors).toBeUndefined()
+    const result = response.body.singleResult.data?.['listTransactions'] as {
+      edges: Array<{ node: { description: string } }>
+    }
+    const descriptions = result.edges.map((edge) => edge.node.description)
+    expect(descriptions).toContain(matchDesc)
+    expect(descriptions).not.toContain(otherDesc)
+  })
+
+  it('T-021: filters by type alone', async () => {
+    const user = await createUser()
+    const category = await createCategory(user.id)
+
+    const expenseDesc = `Expense-${generateUUID()}`
+    const incomeDesc = `Income-${generateUUID()}`
+    await createTransaction(user.id, category.id, new Date(), expenseDesc)
+    await TransactionRepository.create(
+      Transaction.create({
+        userId: user.id,
+        categoryId: category.id,
+        type: TransactionKind.INCOME,
+        description: incomeDesc,
+        date: new Date(),
+        value: 100,
+      }),
+    )
+
+    const response = await server.executeOperation(
+      {
+        query: LIST_TRANSACTIONS,
+        variables: { type: 'EXPENSE' },
+      },
+      { contextValue: buildContext(user.id) },
+    )
+
+    expect(response.body.kind).toBe('single')
+    if (response.body.kind !== 'single') return
+
+    expect(response.body.singleResult.errors).toBeUndefined()
+    const result = response.body.singleResult.data?.['listTransactions'] as {
+      edges: Array<{ node: { description: string } }>
+    }
+    const descriptions = result.edges.map((edge) => edge.node.description)
+    expect(descriptions).toContain(expenseDesc)
+    expect(descriptions).not.toContain(incomeDesc)
+  })
+
+  it('T-021: filters by categoryIds alone', async () => {
+    const user = await createUser()
+    const categoryA = await createCategory(user.id)
+    const categoryB = await createCategory(user.id)
+
+    const descA = `A-${generateUUID()}`
+    const descB = `B-${generateUUID()}`
+    await createTransaction(user.id, categoryA.id, new Date(), descA)
+    await createTransaction(user.id, categoryB.id, new Date(), descB)
+
+    const response = await server.executeOperation(
+      {
+        query: LIST_TRANSACTIONS,
+        variables: { categoryIds: [categoryA.id] },
+      },
+      { contextValue: buildContext(user.id) },
+    )
+
+    expect(response.body.kind).toBe('single')
+    if (response.body.kind !== 'single') return
+
+    expect(response.body.singleResult.errors).toBeUndefined()
+    const result = response.body.singleResult.data?.['listTransactions'] as {
+      edges: Array<{ node: { description: string } }>
+    }
+    const descriptions = result.edges.map((edge) => edge.node.description)
+    expect(descriptions).toContain(descA)
+    expect(descriptions).not.toContain(descB)
+  })
+
+  it('T-021: filters by month+year alone', async () => {
+    const user = await createUser()
+    const category = await createCategory(user.id)
+
+    const inMonthDesc = `InMonth-${generateUUID()}`
+    const outOfMonthDesc = `OutOfMonth-${generateUUID()}`
+    await createTransaction(
+      user.id,
+      category.id,
+      new Date('2026-01-15T00:00:00.000Z'),
+      inMonthDesc,
+    )
+    await createTransaction(
+      user.id,
+      category.id,
+      new Date('2026-02-15T00:00:00.000Z'),
+      outOfMonthDesc,
+    )
+
+    const response = await server.executeOperation(
+      {
+        query: LIST_TRANSACTIONS,
+        variables: { month: 1, year: 2026 },
+      },
+      { contextValue: buildContext(user.id) },
+    )
+
+    expect(response.body.kind).toBe('single')
+    if (response.body.kind !== 'single') return
+
+    expect(response.body.singleResult.errors).toBeUndefined()
+    const result = response.body.singleResult.data?.['listTransactions'] as {
+      edges: Array<{ node: { description: string } }>
+    }
+    const descriptions = result.edges.map((edge) => edge.node.description)
+    expect(descriptions).toContain(inMonthDesc)
+    expect(descriptions).not.toContain(outOfMonthDesc)
+  })
+
+  it('T-021: combines description + type + categoryIds + month + year in one call', async () => {
+    const user = await createUser()
+    const category = await createCategory(user.id)
+    const otherCategory = await createCategory(user.id)
+
+    const matchDesc = `Compra no mercado ${generateUUID()}`
+    await createTransaction(
+      user.id,
+      category.id,
+      new Date('2026-01-15T00:00:00.000Z'),
+      matchDesc,
+    )
+    // wrong category
+    await createTransaction(
+      user.id,
+      otherCategory.id,
+      new Date('2026-01-15T00:00:00.000Z'),
+      `Compra no mercado ${generateUUID()}`,
+    )
+    // wrong month
+    await createTransaction(
+      user.id,
+      category.id,
+      new Date('2026-02-15T00:00:00.000Z'),
+      `Compra no mercado ${generateUUID()}`,
+    )
+    // wrong type
+    await TransactionRepository.create(
+      Transaction.create({
+        userId: user.id,
+        categoryId: category.id,
+        type: TransactionKind.INCOME,
+        description: `Compra no mercado ${generateUUID()}`,
+        date: new Date('2026-01-15T00:00:00.000Z'),
+        value: 100,
+      }),
+    )
+
+    const response = await server.executeOperation(
+      {
+        query: LIST_TRANSACTIONS,
+        variables: {
+          description: 'mercado',
+          type: 'EXPENSE',
+          categoryIds: [category.id],
+          month: 1,
+          year: 2026,
+        },
+      },
+      { contextValue: buildContext(user.id) },
+    )
+
+    expect(response.body.kind).toBe('single')
+    if (response.body.kind !== 'single') return
+
+    expect(response.body.singleResult.errors).toBeUndefined()
+    const result = response.body.singleResult.data?.['listTransactions'] as {
+      edges: Array<{ node: { description: string } }>
+    }
+    expect(result.edges).toHaveLength(1)
+    expect(result.edges[0]?.node.description).toBe(matchDesc)
+  })
+
+  it('T-021: a categoryIds entry belonging to another user returns no rows for that id', async () => {
+    const userA = await createUser()
+    const userB = await createUser()
+    const categoryB = await createCategory(userB.id)
+    await createTransaction(userB.id, categoryB.id, new Date())
+
+    const response = await server.executeOperation(
+      {
+        query: LIST_TRANSACTIONS,
+        variables: { categoryIds: [categoryB.id] },
+      },
+      { contextValue: buildContext(userA.id) },
+    )
+
+    expect(response.body.kind).toBe('single')
+    if (response.body.kind !== 'single') return
+
+    expect(response.body.singleResult.errors).toBeUndefined()
+    const result = response.body.singleResult.data?.['listTransactions'] as {
+      edges: unknown[]
+    }
+    expect(result.edges).toHaveLength(0)
+  })
+
+  it('T-021: month without year returns a BAD_USER_INPUT error', async () => {
+    const user = await createUser()
+
+    const response = await server.executeOperation(
+      {
+        query: LIST_TRANSACTIONS,
+        variables: { month: 1 },
+      },
+      { contextValue: buildContext(user.id) },
+    )
+
+    expect(response.body.kind).toBe('single')
+    if (response.body.kind !== 'single') return
+
+    expect(response.body.singleResult.errors?.[0]?.extensions?.['code']).toBe(
+      'BAD_USER_INPUT',
+    )
+  })
+
+  it('T-021: month+year combined with startDate returns a BAD_USER_INPUT error', async () => {
+    const user = await createUser()
+
+    const response = await server.executeOperation(
+      {
+        query: LIST_TRANSACTIONS,
+        variables: {
+          month: 1,
+          year: 2026,
+          startDate: '2026-01-01T00:00:00.000Z',
+        },
+      },
+      { contextValue: buildContext(user.id) },
+    )
+
+    expect(response.body.kind).toBe('single')
+    if (response.body.kind !== 'single') return
+
+    expect(response.body.singleResult.errors?.[0]?.extensions?.['code']).toBe(
+      'BAD_USER_INPUT',
+    )
   })
 
   it('T-021: respects an explicit startDate/endDate filter', async () => {
