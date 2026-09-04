@@ -20,6 +20,7 @@ type ListTransactionsResult = {
   items: Transaction[]
   hasNextPage: boolean
   endCursor: string | null
+  totalRecord: number
 }
 
 const listTransactions = async (
