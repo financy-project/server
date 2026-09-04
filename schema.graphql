@@ -74,6 +74,8 @@ input RegisterUserInput {
 
 type TransactionCategoryType {
   color: String!
+  description: String
+  icon: String!
   id: ID!
   title: String!
 }
@@ -81,6 +83,7 @@ type TransactionCategoryType {
 type TransactionConnection {
   edges: [TransactionEdge!]!
   pageInfo: PageInfo!
+  totalRecord: Int!
 }
 
 type TransactionEdge {
