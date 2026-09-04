@@ -46,6 +46,17 @@ const translations: Record<Locale, Record<string, string>> = {
       'endDate must not be before startDate',
     'validations.transaction_first_min': 'first must be at least 1',
     'validations.transaction_first_max': 'first must be at most 50',
+    'validations.transaction_period_incomplete':
+      'Both month and year must be provided together',
+    'validations.transaction_period_conflicts_with_date_range':
+      'month/year cannot be combined with startDate/endDate',
+    'validations.transaction_month_invalid': 'month must be between 1 and 12',
+    'validations.transaction_year_invalid':
+      'year must be between 2000 and 2100',
+    'validations.transaction_description_filter_invalid':
+      'description must be at most 500 characters',
+    'validations.transaction_category_ids_invalid':
+      'categoryIds must be a list of valid UUIDs',
   },
   'pt-br': {
     'errors.internal_server_error': 'Um erro inesperado ocorreu',
@@ -90,6 +101,16 @@ const translations: Record<Locale, Record<string, string>> = {
       'endDate não pode ser anterior a startDate',
     'validations.transaction_first_min': 'first deve ser no mínimo 1',
     'validations.transaction_first_max': 'first deve ser no máximo 50',
+    'validations.transaction_period_incomplete':
+      'month e year devem ser informados juntos',
+    'validations.transaction_period_conflicts_with_date_range':
+      'month/year não podem ser combinados com startDate/endDate',
+    'validations.transaction_month_invalid': 'month deve estar entre 1 e 12',
+    'validations.transaction_year_invalid': 'year deve estar entre 2000 e 2100',
+    'validations.transaction_description_filter_invalid':
+      'description deve ter no máximo 500 caracteres',
+    'validations.transaction_category_ids_invalid':
+      'categoryIds deve ser uma lista de UUIDs válidos',
   },
 }
 
