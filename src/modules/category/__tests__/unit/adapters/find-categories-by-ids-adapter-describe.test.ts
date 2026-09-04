@@ -44,8 +44,22 @@ describe('findCategoriesByIdsAdapter', () => {
       'cat-2',
     ])
     expect(result).toEqual([
-      { id: 'cat-1', userId: 'user-1', title: 'Groceries', color: '#FF00AA' },
-      { id: 'cat-2', userId: 'user-2', title: 'Rent', color: '#00FF00' },
+      {
+        id: 'cat-1',
+        userId: 'user-1',
+        title: 'Groceries',
+        description: 'Food',
+        icon: 'cart',
+        color: '#FF00AA',
+      },
+      {
+        id: 'cat-2',
+        userId: 'user-2',
+        title: 'Rent',
+        description: null,
+        icon: 'home',
+        color: '#00FF00',
+      },
     ])
   })
 })
