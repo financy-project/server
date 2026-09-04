@@ -113,10 +113,30 @@ const remove = async (id: string): Promise<void> => {
   }
 }
 
+const countByCategoryIds = async (
+  categoryIds: string[],
+): Promise<Record<string, number>> => {
+  if (categoryIds.length === 0) return {}
+
+  const groups = await prisma.transaction.groupBy({
+    by: ['categoryId'],
+    where: { categoryId: { in: categoryIds } },
+    _count: { _all: true },
+  })
+
+  return groups.reduce<Record<string, number>>((counts, group) => {
+    if (group.categoryId) {
+      counts[group.categoryId] = group._count._all
+    }
+    return counts
+  }, {})
+}
+
 export const TransactionRepository = {
   create,
   findById,
   findAllByUserId,
   update,
   remove,
+  countByCategoryIds,
 }

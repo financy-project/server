@@ -4,10 +4,10 @@ Generated from `plan.md`'s `## Test Cases` — each entry copied verbatim, prefi
 
 ## Phase 1: Foundation
 
-- [ ] T-001: `TransactionRepository.countByCategoryIds` returns the correct count per `categoryId` across multiple categories
-- [ ] T-002: `TransactionRepository.countByCategoryIds` — a `categoryId` with zero transactions is absent from the returned map
-- [ ] T-003: `TransactionRepository.countByCategoryIds` — empty input returns `{}`
-- [ ] T-004: `countTransactionsByCategoryIdsAdapter` delegates to `TransactionRepository.countByCategoryIds` and returns its result unchanged
+- [x] T-001: `TransactionRepository.countByCategoryIds` returns the correct count per `categoryId` across multiple categories
+- [x] T-002: `TransactionRepository.countByCategoryIds` — a `categoryId` with zero transactions is absent from the returned map
+- [x] T-003: `TransactionRepository.countByCategoryIds` — empty input returns `{}`
+- [x] T-004: `countTransactionsByCategoryIdsAdapter` delegates to `TransactionRepository.countByCategoryIds` and returns its result unchanged
 
 ## Phase 2: Features
 

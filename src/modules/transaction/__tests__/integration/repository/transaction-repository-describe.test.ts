@@ -220,6 +220,69 @@ describe('TransactionRepository (integration)', () => {
     })
   })
 
+  describe('countByCategoryIds', () => {
+    it('returns the correct count per categoryId across multiple categories', async () => {
+      const user = await createUser()
+      const categoryA = await createCategory(user.id)
+      const categoryB = await createCategory(user.id)
+
+      await TransactionRepository.create(
+        Transaction.create({
+          userId: user.id,
+          categoryId: categoryA.id,
+          type: TransactionKind.EXPENSE,
+          description: 'A1',
+          date: new Date('2026-01-01'),
+          value: 100,
+        }),
+      )
+      await TransactionRepository.create(
+        Transaction.create({
+          userId: user.id,
+          categoryId: categoryA.id,
+          type: TransactionKind.EXPENSE,
+          description: 'A2',
+          date: new Date('2026-01-02'),
+          value: 100,
+        }),
+      )
+      await TransactionRepository.create(
+        Transaction.create({
+          userId: user.id,
+          categoryId: categoryB.id,
+          type: TransactionKind.EXPENSE,
+          description: 'B1',
+          date: new Date('2026-01-03'),
+          value: 100,
+        }),
+      )
+
+      const result = await TransactionRepository.countByCategoryIds([
+        categoryA.id,
+        categoryB.id,
+      ])
+
+      expect(result).toEqual({ [categoryA.id]: 2, [categoryB.id]: 1 })
+    })
+
+    it('omits a categoryId with zero transactions from the returned map', async () => {
+      const user = await createUser()
+      const category = await createCategory(user.id)
+
+      const result = await TransactionRepository.countByCategoryIds([
+        category.id,
+      ])
+
+      expect(result).toEqual({})
+    })
+
+    it('returns {} for an empty categoryIds input', async () => {
+      const result = await TransactionRepository.countByCategoryIds([])
+
+      expect(result).toEqual({})
+    })
+  })
+
   describe('remove', () => {
     it('deletes the row', async () => {
       const user = await createUser()
