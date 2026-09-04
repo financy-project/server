@@ -51,11 +51,13 @@ describe('transaction mappers', () => {
   })
 
   describe('toTransactionCategoryType', () => {
-    it('T-018: maps id, title and color', () => {
+    it('T-005: maps id, title, description, icon and color', () => {
       const category: CategoryDTO = {
         id: 'cat-1',
         userId: 'user-1',
         title: 'Groceries',
+        description: 'Food purchases',
+        icon: 'cart',
         color: '#FF00AA',
       }
 
@@ -63,7 +65,24 @@ describe('transaction mappers', () => {
 
       expect(result.id).toBe('cat-1')
       expect(result.title).toBe('Groceries')
+      expect(result.description).toBe('Food purchases')
+      expect(result.icon).toBe('cart')
       expect(result.color).toBe('#FF00AA')
+    })
+
+    it('T-005: maps a null description through unchanged', () => {
+      const category: CategoryDTO = {
+        id: 'cat-2',
+        userId: 'user-1',
+        title: 'Rent',
+        description: null,
+        icon: 'home',
+        color: '#00FF00',
+      }
+
+      const result = toTransactionCategoryType(category)
+
+      expect(result.description).toBeNull()
     })
   })
 

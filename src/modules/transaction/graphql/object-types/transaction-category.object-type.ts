@@ -13,4 +13,10 @@ export class TransactionCategoryType {
 
   @Field()
   color!: string
+
+  @Field(() => String, { nullable: true })
+  description?: string | null
+
+  @Field()
+  icon!: string
 }
