@@ -47,6 +47,8 @@ const LIST_TRANSACTIONS = `
           category {
             id
             title
+            description
+            icon
             color
           }
         }
@@ -55,6 +57,7 @@ const LIST_TRANSACTIONS = `
         hasNextPage
         endCursor
       }
+      totalRecord
     }
   }
 `
@@ -79,11 +82,14 @@ describe('listTransactions query (e2e)', () => {
     })
   }
 
-  const createCategory = async (userId: string) => {
+  const createCategory = async (
+    userId: string,
+    description: string | null = null,
+  ) => {
     const category = Category.create({
       userId,
       title: `Cat-${generateUUID()}`,
-      description: null,
+      description,
       icon: 'cart',
       color: '#123456',
     })
@@ -555,9 +561,9 @@ describe('listTransactions query (e2e)', () => {
     expect(secondResult.pageInfo.hasNextPage).toBe(false)
   })
 
-  it('T-021: resolves category { id title color } for a linked category', async () => {
+  it('T-008: resolves the full category object (id, title, description, icon, color) for a linked category', async () => {
     const user = await createUser()
-    const category = await createCategory(user.id)
+    const category = await createCategory(user.id, 'Food purchases')
     await createTransaction(user.id, category.id, new Date())
 
     const response = await server.executeOperation(
@@ -571,13 +577,144 @@ describe('listTransactions query (e2e)', () => {
     expect(response.body.singleResult.errors).toBeUndefined()
     const result = response.body.singleResult.data?.['listTransactions'] as {
       edges: Array<{
-        node: { category: { id: string; title: string; color: string } }
+        node: {
+          category: {
+            id: string
+            title: string
+            description: string | null
+            icon: string
+            color: string
+          }
+        }
       }>
     }
     expect(result.edges[0]?.node.category).toMatchObject({
       id: category.id,
       title: category.title,
+      description: 'Food purchases',
+      icon: category.icon,
       color: category.color,
     })
+  })
+
+  it('T-009: resolves category as null for a transaction without one', async () => {
+    const user = await createUser()
+    const category = await createCategory(user.id)
+    await createTransaction(
+      user.id,
+      category.id,
+      new Date(),
+      `NoCategory-${generateUUID()}`,
+    )
+    // Deleting the category cascades categoryId to null on its transactions
+    // (onDelete: SetNull) — the realistic way a transaction ends up with no
+    // category, since Transaction.create() requires one at creation time.
+    await CategoryRepository.remove(category.id)
+
+    const response = await server.executeOperation(
+      { query: LIST_TRANSACTIONS, variables: {} },
+      { contextValue: buildContext(user.id) },
+    )
+
+    expect(response.body.kind).toBe('single')
+    if (response.body.kind !== 'single') return
+
+    expect(response.body.singleResult.errors).toBeUndefined()
+    const result = response.body.singleResult.data?.['listTransactions'] as {
+      edges: Array<{ node: { category: unknown } }>
+    }
+    expect(result.edges[0]?.node.category).toBeNull()
+  })
+
+  it('T-010: totalRecord equals the full filtered-match count while edges only holds the current page', async () => {
+    const user = await createUser()
+    const category = await createCategory(user.id)
+    await Promise.all(
+      [1, 2, 3, 4, 5].map((day) =>
+        createTransaction(
+          user.id,
+          category.id,
+          new Date(`2026-01-0${day}T00:00:00.000Z`),
+        ),
+      ),
+    )
+
+    const response = await server.executeOperation(
+      {
+        query: LIST_TRANSACTIONS,
+        variables: { first: 2 },
+      },
+      { contextValue: buildContext(user.id) },
+    )
+
+    expect(response.body.kind).toBe('single')
+    if (response.body.kind !== 'single') return
+
+    expect(response.body.singleResult.errors).toBeUndefined()
+    const result = response.body.singleResult.data?.['listTransactions'] as {
+      edges: unknown[]
+      totalRecord: number
+    }
+    expect(result.edges).toHaveLength(2)
+    expect(result.totalRecord).toBe(5)
+  })
+
+  it('T-011: totalRecord changes correctly as filters narrow the result set', async () => {
+    const user = await createUser()
+    const category = await createCategory(user.id)
+    const matchDesc = `Compra no mercado ${generateUUID()}`
+    await createTransaction(user.id, category.id, new Date(), matchDesc)
+    await createTransaction(user.id, category.id, new Date())
+    await createTransaction(user.id, category.id, new Date())
+
+    const unfiltered = await server.executeOperation(
+      { query: LIST_TRANSACTIONS, variables: {} },
+      { contextValue: buildContext(user.id) },
+    )
+    const filtered = await server.executeOperation(
+      {
+        query: LIST_TRANSACTIONS,
+        variables: { description: 'MERCADO' },
+      },
+      { contextValue: buildContext(user.id) },
+    )
+
+    expect(unfiltered.body.kind).toBe('single')
+    expect(filtered.body.kind).toBe('single')
+    if (unfiltered.body.kind !== 'single' || filtered.body.kind !== 'single')
+      return
+
+    const unfilteredResult = unfiltered.body.singleResult.data?.[
+      'listTransactions'
+    ] as { totalRecord: number }
+    const filteredResult = filtered.body.singleResult.data?.[
+      'listTransactions'
+    ] as { totalRecord: number }
+
+    expect(unfilteredResult.totalRecord).toBe(3)
+    expect(filteredResult.totalRecord).toBe(1)
+  })
+
+  it('T-012: totalRecord never includes another user’s transactions', async () => {
+    const userA = await createUser()
+    const userB = await createUser()
+    const categoryA = await createCategory(userA.id)
+    const categoryB = await createCategory(userB.id)
+    await createTransaction(userA.id, categoryA.id, new Date())
+    await createTransaction(userB.id, categoryB.id, new Date())
+    await createTransaction(userB.id, categoryB.id, new Date())
+
+    const response = await server.executeOperation(
+      { query: LIST_TRANSACTIONS, variables: {} },
+      { contextValue: buildContext(userA.id) },
+    )
+
+    expect(response.body.kind).toBe('single')
+    if (response.body.kind !== 'single') return
+
+    const result = response.body.singleResult.data?.['listTransactions'] as {
+      totalRecord: number
+    }
+    expect(result.totalRecord).toBe(1)
   })
 })
