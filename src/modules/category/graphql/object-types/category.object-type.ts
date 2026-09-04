@@ -1,4 +1,4 @@
-import { Field, ID, ObjectType } from 'type-graphql'
+import { Field, ID, Int, ObjectType } from 'type-graphql'
 
 @ObjectType()
 export class CategoryType {
@@ -16,4 +16,9 @@ export class CategoryType {
 
   @Field()
   color!: string
+
+  // Resolved via @FieldResolver on CategoryResolver (DataLoader), not a
+  // plain mapped field.
+  @Field(() => Int)
+  transactionsQuantity!: number
 }

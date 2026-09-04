@@ -9,6 +9,7 @@ type CategoryType {
   icon: String!
   id: ID!
   title: String!
+  transactionsQuantity: Int!
 }
 
 input CreateCategoryInput {

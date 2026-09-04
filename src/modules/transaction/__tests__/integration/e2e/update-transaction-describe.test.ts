@@ -12,6 +12,7 @@ import {
   TransactionKind,
 } from '@/modules/transaction'
 import { buildCategoriesByIdLoader } from '@/modules/transaction/loaders'
+import { buildTransactionsQuantityByCategoryIdLoader } from '@/modules/category/loaders'
 
 const UPDATE_TRANSACTION = `
   mutation UpdateTransaction($id: ID!, $input: UpdateTransactionInput!) {
@@ -69,7 +70,11 @@ describe('updateTransaction mutation (e2e)', () => {
   const buildContext = (userId: string): GraphQLContext => ({
     currentUser: { id: userId },
     locale: 'en',
-    loaders: { categoriesById: buildCategoriesByIdLoader() },
+    loaders: {
+      categoriesById: buildCategoriesByIdLoader(),
+      transactionsQuantityByCategoryId:
+        buildTransactionsQuantityByCategoryIdLoader(),
+    },
     cookies: { get: jest.fn(), set: jest.fn() },
   })
 
