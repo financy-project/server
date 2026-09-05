@@ -70,6 +70,7 @@ type Mutation {
   deleteCategory(id: ID!): Boolean!
   deleteTransaction(id: ID!): Boolean!
   login(input: LoginInput!): UserType!
+  logout: Boolean!
   registerUser(input: RegisterUserInput!): UserType!
   updateCategory(id: ID!, input: UpdateCategoryInput!): CategoryType!
   updateTransaction(id: ID!, input: UpdateTransactionInput!): TransactionType!
