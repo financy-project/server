@@ -1,3 +1,3 @@
 - [x] B-013: Regenerate `schema.graphql` (`pnpm build` or `pnpm dev` triggers `buildAppSchema()`'s `emitSchemaFile`) and commit the diff (new `dashboard` query, `DashboardType`, `DashboardMovementType`, `DashboardCategoryBalanceType`)
-- [ ] B-014: Run `/architecture-audit src/modules/dashboard` and fix any flagged deviations
+- [x] B-014: Run `/architecture-audit src/modules/dashboard` and fix any flagged deviations
 - [ ] B-015: Verify `pnpm test --testPathPatterns=dashboard` and the updated `transaction-repository-describe.test.ts` all pass, then full `pnpm test`
