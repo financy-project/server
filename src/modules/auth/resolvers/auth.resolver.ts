@@ -28,4 +28,16 @@ export class AuthResolver {
     })
     return toAuthenticatedUserType(user)
   }
+
+  @Mutation(() => Boolean)
+  logout(@Ctx() ctx: GraphQLContext): boolean {
+    ctx.cookies.set(ACCESS_TOKEN_COOKIE_NAME, '', {
+      httpOnly: true,
+      secure: Environments.isProduction,
+      sameSite: 'lax',
+      path: '/',
+      maxAgeSeconds: 0,
+    })
+    return true
+  }
 }
