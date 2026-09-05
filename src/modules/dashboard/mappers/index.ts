@@ -1,1 +1,1 @@
-export {} // export { toDashboardType } from './dashboard.mapper'
+export { toDashboardType } from './dashboard.mapper'
