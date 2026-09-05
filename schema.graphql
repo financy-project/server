@@ -94,14 +94,6 @@ input RegisterUserInput {
   password: String!
 }
 
-type TransactionCategoryType {
-  color: String!
-  description: String
-  icon: String!
-  id: ID!
-  title: String!
-}
-
 type TransactionConnection {
   edges: [TransactionEdge!]!
   pageInfo: PageInfo!
@@ -119,7 +111,7 @@ enum TransactionKind {
 }
 
 type TransactionType {
-  category: TransactionCategoryType
+  category: CategoryType
   date: DateTimeISO!
   description: String!
   id: ID!

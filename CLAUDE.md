@@ -4,6 +4,8 @@ This file provides operational guidance for working with this repository. For ar
 
 > This project is bootstrapped from the same architecture/workflow as a sibling REST project, adapted for **GraphQL + Apollo Server + TypeGraphQL + Prisma**. `docs/architecture/`, `constitution.md`, the `.claude/agents/`, and the `.claude/skills/` are all written and current. What's still missing is the actual application scaffolding — `package.json`, `tsconfig*.json`, `prisma/schema.prisma`, `.env.*`, and the `src/` skeleton itself.
 
+> **Architecture in transition.** `category`, `transaction`, and `dashboard` were flattened away from the module-based DDD pattern described in `docs/architecture/` (no more `src/modules/<name>/`, no ports/adapters/gateways, no use-case layer) — see **[constitution.md § Flat Architecture](constitution.md#flat-architecture-category-transaction-dashboard)** for the current structure and why. `auth`, `user`, and `health` still follow the pattern `docs/architecture/` and `/scaffold` describe. Everything below that references modules, `/scaffold`, or the backend checklist's layer order applies to `auth`/`user`/`health`-shaped work only — for `category`/`transaction`/`dashboard`-shaped work, follow the flat pattern instead.
+
 ## Commands
 
 ```bash

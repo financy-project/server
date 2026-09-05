@@ -3,9 +3,9 @@ import type { GraphQLSchema } from 'graphql'
 import { HealthResolver } from '@/modules/health'
 import { UserResolver } from '@/modules/user'
 import { AuthResolver } from '@/modules/auth'
-import { CategoryResolver } from '@/modules/category'
-import { TransactionResolver } from '@/modules/transaction'
-import { DashboardResolver } from '@/modules/dashboard'
+import { CategoryResolver } from '@/resolvers/category.resolver'
+import { TransactionResolver } from '@/resolvers/transaction.resolver'
+import { DashboardResolver } from '@/resolvers/dashboard.resolver'
 
 export const buildAppSchema = (): Promise<GraphQLSchema> =>
   buildSchema({
