@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { useDatabase } from '@/test/helpers/db'
 import { generateUUID } from '@/shared/utils/uuid'
+import { CategoryRepository } from '@/modules/category'
 import { Transaction } from '../../../entity/transaction.entity'
 import { TransactionRepository } from '../../../repository/transaction.repository'
 import { TransactionNotFoundError } from '../../../errors/transaction-errors'
@@ -690,6 +691,174 @@ describe('TransactionRepository (integration)', () => {
       const result = await TransactionRepository.countByCategoryIds([])
 
       expect(result).toEqual({})
+    })
+  })
+
+  describe('summarizeForUser', () => {
+    const range = {
+      startDate: new Date('2026-02-01T00:00:00.000Z'),
+      endDate: new Date('2026-02-28T23:59:59.999Z'),
+    }
+
+    it('T-001: returns one row per distinct (categoryId, type) pair within range', async () => {
+      const user = await createUser()
+      const categoryA = await createCategory(user.id)
+      const categoryB = await createCategory(user.id)
+
+      await TransactionRepository.create(
+        Transaction.create({
+          userId: user.id,
+          categoryId: categoryA.id,
+          type: TransactionKind.INCOME,
+          description: 'Salary',
+          date: new Date('2026-02-05'),
+          value: 5000,
+        }),
+      )
+      await TransactionRepository.create(
+        Transaction.create({
+          userId: user.id,
+          categoryId: categoryA.id,
+          type: TransactionKind.INCOME,
+          description: 'Bonus',
+          date: new Date('2026-02-10'),
+          value: 1000,
+        }),
+      )
+      await TransactionRepository.create(
+        Transaction.create({
+          userId: user.id,
+          categoryId: categoryB.id,
+          type: TransactionKind.EXPENSE,
+          description: 'Rent',
+          date: new Date('2026-02-15'),
+          value: 2000,
+        }),
+      )
+
+      const result = await TransactionRepository.summarizeForUser(
+        user.id,
+        range,
+      )
+
+      expect(result).toEqual(
+        expect.arrayContaining([
+          {
+            categoryId: categoryA.id,
+            type: TransactionKind.INCOME,
+            totalValue: 6000,
+            count: 2,
+          },
+          {
+            categoryId: categoryB.id,
+            type: TransactionKind.EXPENSE,
+            totalValue: 2000,
+            count: 1,
+          },
+        ]),
+      )
+      expect(result).toHaveLength(2)
+    })
+
+    it('T-002: excludes transactions with date outside the range', async () => {
+      const user = await createUser()
+      const category = await createCategory(user.id)
+
+      await TransactionRepository.create(
+        Transaction.create({
+          userId: user.id,
+          categoryId: category.id,
+          type: TransactionKind.EXPENSE,
+          description: 'Outside range (before)',
+          date: new Date('2026-01-31'),
+          value: 100,
+        }),
+      )
+      await TransactionRepository.create(
+        Transaction.create({
+          userId: user.id,
+          categoryId: category.id,
+          type: TransactionKind.EXPENSE,
+          description: 'Outside range (after)',
+          date: new Date('2026-03-01'),
+          value: 100,
+        }),
+      )
+
+      const result = await TransactionRepository.summarizeForUser(
+        user.id,
+        range,
+      )
+
+      expect(result).toEqual([])
+    })
+
+    it("T-003: excludes another user's transactions", async () => {
+      const userA = await createUser()
+      const userB = await createUser()
+      const categoryB = await createCategory(userB.id)
+
+      await TransactionRepository.create(
+        Transaction.create({
+          userId: userB.id,
+          categoryId: categoryB.id,
+          type: TransactionKind.EXPENSE,
+          description: "Other user's transaction",
+          date: new Date('2026-02-10'),
+          value: 500,
+        }),
+      )
+
+      const result = await TransactionRepository.summarizeForUser(
+        userA.id,
+        range,
+      )
+
+      expect(result).toEqual([])
+    })
+
+    it('T-004: includes a categoryId: null row for uncategorized transactions in range', async () => {
+      const user = await createUser()
+      const category = await createCategory(user.id)
+      const transaction = await TransactionRepository.create(
+        Transaction.create({
+          userId: user.id,
+          categoryId: category.id,
+          type: TransactionKind.EXPENSE,
+          description: 'Category later deleted',
+          date: new Date('2026-02-10'),
+          value: 300,
+        }),
+      )
+      await CategoryRepository.remove(category.id)
+
+      const result = await TransactionRepository.summarizeForUser(
+        user.id,
+        range,
+      )
+
+      expect(result).toEqual([
+        {
+          categoryId: null,
+          type: TransactionKind.EXPENSE,
+          totalValue: 300,
+          count: 1,
+        },
+      ])
+      // sanity check the underlying row really was unlinked, not just filtered
+      const persisted = await TransactionRepository.findById(transaction.id)
+      expect(persisted.categoryId).toBeNull()
+    })
+
+    it('T-005: returns [] for a user with no transactions in range', async () => {
+      const user = await createUser()
+
+      const result = await TransactionRepository.summarizeForUser(
+        user.id,
+        range,
+      )
+
+      expect(result).toEqual([])
     })
   })
 
