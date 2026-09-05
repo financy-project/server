@@ -4,6 +4,6 @@
 - [x] T-009: `GetDashboardUseCase.getDashboard` excludes the `categoryId: null` group from `balanceByCategory`
 - [x] T-010: `GetDashboardUseCase.getDashboard` omits categories with no rows this month (i.e., never invents a zero-value entry)
 - [x] T-011: `GetDashboardUseCase.getDashboard` returns `recentTransactions` from `TransactionRepository.findAllByUserId`'s `items` unmodified (capped at 5, ordered by the repository's existing `date desc, id desc`)
-- [ ] T-012: `dashboard` query (e2e) happy path: authenticated user with current-month activity gets correct `movement`, 5 `recentTransactions` with resolved `category`, and correct `balanceByCategory`
-- [ ] T-013: `dashboard` query (e2e) empty-month path: authenticated user with no transactions this month gets `movement: { income: 0, expense: 0, totalBalance: 0 }` and `balanceByCategory: []` (but `recentTransactions` may still be non-empty from a prior month)
-- [ ] T-014: `dashboard` query (e2e) unauthenticated: `errors[0].extensions.code === 'UNAUTHENTICATED'`
+- [x] T-012: `dashboard` query (e2e) happy path: authenticated user with current-month activity gets correct `movement`, 5 `recentTransactions` with resolved `category`, and correct `balanceByCategory`
+- [x] T-013: `dashboard` query (e2e) empty-month path: authenticated user with no transactions this month gets `movement: { income: 0, expense: 0, totalBalance: 0 }` and `balanceByCategory: []` (but `recentTransactions` may still be non-empty from a prior month)
+- [x] T-014: `dashboard` query (e2e) unauthenticated: `errors[0].extensions.code === 'UNAUTHENTICATED'`

@@ -5,4 +5,4 @@
 - [x] B-009: `DashboardResolver` in `src/modules/dashboard/resolvers/dashboard.resolver.ts`: `@Resolver(() => DashboardType) class DashboardResolver { @Query(() => DashboardType, { complexity: 6 }) async dashboard(@Ctx() ctx: GraphQLContext): Promise<DashboardType> { const { id: userId } = requireCurrentUser(ctx); const summary = await GetDashboardUseCase.getDashboard(userId); return toDashboardType(summary) } }`
 - [x] B-010: Register `DashboardResolver` in `src/schema/build-schema.ts`'s `resolvers` array (import from `@/modules/dashboard`)
 - [x] B-011: Update `src/modules/dashboard/index.ts` barrel to export `DashboardResolver` from `./resolvers` (per the "only export entity/types/enums/errors/repository/resolver" convention — no entity/errors/repository here, so it exports `types` and `resolvers` only)
-- [ ] B-012: E2E test in `src/modules/dashboard/__tests__/integration/e2e/dashboard-describe.test.ts` via `buildTestSchema()` — see `test-cases.md` for the full case list
+- [x] B-012: E2E test in `src/modules/dashboard/__tests__/integration/e2e/dashboard-describe.test.ts` via `buildTestSchema()` — see `test-cases.md` for the full case list
