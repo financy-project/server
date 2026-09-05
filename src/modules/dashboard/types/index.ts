@@ -1,1 +1,5 @@
-export {} // export type { DashboardProps, CreateDashboardProps } from '../entity/dashboard.entity'
+export type {
+  DashboardMovement,
+  CategoryBalance,
+  DashboardSummary,
+} from './dashboard.types'
