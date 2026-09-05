@@ -160,6 +160,35 @@ const countByCategoryIds = async (
   }, {})
 }
 
+export type TransactionSummaryRow = {
+  categoryId: string | null
+  type: TransactionKind
+  totalValue: number
+  count: number
+}
+
+const summarizeForUser = async (
+  userId: string,
+  range: { startDate: Date; endDate: Date },
+): Promise<TransactionSummaryRow[]> => {
+  const groups = await prisma.transaction.groupBy({
+    by: ['categoryId', 'type'],
+    where: {
+      userId,
+      date: { gte: range.startDate, lte: range.endDate },
+    },
+    _sum: { value: true },
+    _count: { _all: true },
+  })
+
+  return groups.map((group) => ({
+    categoryId: group.categoryId,
+    type: group.type as TransactionKind,
+    totalValue: group._sum.value ?? 0,
+    count: group._count._all,
+  }))
+}
+
 export const TransactionRepository = {
   create,
   findById,
@@ -167,4 +196,5 @@ export const TransactionRepository = {
   update,
   remove,
   countByCategoryIds,
+  summarizeForUser,
 }

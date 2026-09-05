@@ -27,6 +27,26 @@ input CreateTransactionInput {
   value: Int!
 }
 
+type DashboardCategoryBalanceType {
+  categoryId: ID!
+  color: String!
+  title: String!
+  totalValue: Int!
+  transactionCount: Int!
+}
+
+type DashboardMovementType {
+  expense: Int!
+  income: Int!
+  totalBalance: Int!
+}
+
+type DashboardType {
+  balanceByCategory: [DashboardCategoryBalanceType!]!
+  movement: DashboardMovementType!
+  recentTransactions: [TransactionType!]!
+}
+
 """
 A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.This scalar is serialized to a string in ISO 8601 format and parsed from a string in ISO 8601 format.
 """
@@ -61,6 +81,7 @@ type PageInfo {
 }
 
 type Query {
+  dashboard: DashboardType!
   health: HealthStatusType!
   listCategories: [CategoryType!]!
   listTransactions(after: String, categoryIds: [ID!], description: String, endDate: DateTimeISO, first: Int = 20, month: Int, startDate: DateTimeISO, type: TransactionKind, year: Int): TransactionConnection!
