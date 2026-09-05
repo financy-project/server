@@ -631,6 +631,54 @@ describe('TransactionRepository (integration)', () => {
     })
   })
 
+  describe('reassignCategory', () => {
+    it('moves every transaction from fromCategoryId to toCategoryId', async () => {
+      const user = await createUser()
+      const fromCategory = await createCategory(user.id)
+      const toCategory = await createCategory(user.id)
+
+      const transactionA = await TransactionRepository.create(
+        Transaction.create({
+          userId: user.id,
+          categoryId: fromCategory.id,
+          type: TransactionKind.EXPENSE,
+          description: 'A',
+          date: new Date('2026-01-01'),
+          value: 100,
+        }),
+      )
+      const transactionB = await TransactionRepository.create(
+        Transaction.create({
+          userId: user.id,
+          categoryId: fromCategory.id,
+          type: TransactionKind.EXPENSE,
+          description: 'B',
+          date: new Date('2026-01-02'),
+          value: 100,
+        }),
+      )
+
+      await TransactionRepository.reassignCategory(
+        fromCategory.id,
+        toCategory.id,
+      )
+
+      const resultA = await TransactionRepository.findById(transactionA.id)
+      const resultB = await TransactionRepository.findById(transactionB.id)
+      expect(resultA.categoryId).toBe(toCategory.id)
+      expect(resultB.categoryId).toBe(toCategory.id)
+    })
+
+    it('is a no-op when no transaction uses fromCategoryId', async () => {
+      const user = await createUser()
+      const toCategory = await createCategory(user.id)
+
+      await expect(
+        TransactionRepository.reassignCategory(generateUUID(), toCategory.id),
+      ).resolves.toBeUndefined()
+    })
+  })
+
   describe('countByCategoryIds', () => {
     it('returns the correct count per categoryId across multiple categories', async () => {
       const user = await createUser()

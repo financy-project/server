@@ -141,6 +141,16 @@ const remove = async (id: string): Promise<void> => {
   }
 }
 
+const reassignCategory = async (
+  fromCategoryId: string,
+  toCategoryId: string,
+): Promise<void> => {
+  await prisma.transaction.updateMany({
+    where: { categoryId: fromCategoryId },
+    data: { categoryId: toCategoryId },
+  })
+}
+
 const countByCategoryIds = async (
   categoryIds: string[],
 ): Promise<Record<string, number>> => {
@@ -195,6 +205,7 @@ export const TransactionRepository = {
   findAllByUserId,
   update,
   remove,
+  reassignCategory,
   countByCategoryIds,
   summarizeForUser,
 }

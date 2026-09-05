@@ -68,6 +68,52 @@ describe('CategoryRepository (integration)', () => {
     })
   })
 
+  describe('upsertByUserIdAndTitle', () => {
+    it('creates the category when no row matches (userId, title)', async () => {
+      const user = await createUser()
+      const category = Category.create({
+        userId: user.id,
+        title: 'Outros',
+        description: null,
+        icon: 'tag',
+        color: '#2563EB',
+      })
+
+      const result = await CategoryRepository.upsertByUserIdAndTitle(category)
+
+      expect(result.id).toBe(category.id)
+      expect(result.title).toBe('Outros')
+      expect(result.icon).toBe('tag')
+      expect(result.color).toBe('#2563EB')
+    })
+
+    it('returns the existing row unchanged when (userId, title) already exists', async () => {
+      const user = await createUser()
+      const existing = Category.create({
+        userId: user.id,
+        title: 'Outros',
+        description: null,
+        icon: 'tag',
+        color: '#2563EB',
+      })
+      await CategoryRepository.create(existing)
+
+      const attempt = Category.create({
+        userId: user.id,
+        title: 'Outros',
+        description: null,
+        icon: 'different-icon',
+        color: '#000000',
+      })
+
+      const result = await CategoryRepository.upsertByUserIdAndTitle(attempt)
+
+      expect(result.id).toBe(existing.id)
+      expect(result.icon).toBe('tag')
+      expect(result.color).toBe('#2563EB')
+    })
+  })
+
   describe('findById', () => {
     it('returns the category when found', async () => {
       const user = await createUser()

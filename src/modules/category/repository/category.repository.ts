@@ -31,6 +31,27 @@ const create = async (category: Category): Promise<Category> => {
   }
 }
 
+const upsertByUserIdAndTitle = async (
+  category: Category,
+): Promise<Category> => {
+  const row = await prisma.category.upsert({
+    where: {
+      userId_title: { userId: category.userId, title: category.title },
+    },
+    create: {
+      id: category.id,
+      userId: category.userId,
+      title: category.title,
+      description: category.description,
+      icon: category.icon,
+      color: category.color,
+    },
+    update: {},
+  })
+
+  return Category.fromRepository(row)
+}
+
 const findById = async (id: string): Promise<Category> => {
   const row = await prisma.category.findUnique({ where: { id } })
 
@@ -95,6 +116,7 @@ const remove = async (id: string): Promise<void> => {
 
 export const CategoryRepository = {
   create,
+  upsertByUserIdAndTitle,
   findById,
   findManyByIds,
   findAllByUserId,
