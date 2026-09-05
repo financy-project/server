@@ -1,1 +1,1 @@
-export {} // export { DashboardResolver } from './dashboard.resolver'
+export { DashboardResolver } from './dashboard.resolver'

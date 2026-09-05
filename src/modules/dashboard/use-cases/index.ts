@@ -1,1 +1,1 @@
-export {} // export { CreateDashboardUseCase } from './create-dashboard.use-case'
+export { GetDashboardUseCase } from './get-dashboard.use-case'
