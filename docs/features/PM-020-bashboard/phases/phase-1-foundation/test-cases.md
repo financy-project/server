@@ -1,0 +1,5 @@
+- [ ] T-001: `TransactionRepository.summarizeForUser` returns one row per `(categoryId, type)` pair with correct `totalValue`/`count` within the given range
+- [ ] T-002: `TransactionRepository.summarizeForUser` excludes transactions with `date` outside `[startDate, endDate]`
+- [ ] T-003: `TransactionRepository.summarizeForUser` excludes another user's transactions
+- [ ] T-004: `TransactionRepository.summarizeForUser` includes a `categoryId: null` row for uncategorized transactions in range
+- [ ] T-005: `TransactionRepository.summarizeForUser` returns `[]` for a user with no transactions in range
