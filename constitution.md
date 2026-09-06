@@ -8,6 +8,13 @@ We believe in **Specification-Driven Development (SDD)**: features are defined b
 
 We value **testability, clarity, and maintainability** over cleverness. Code should be easy to reason about, and business logic should be explicit.
 
+> **Architecture in transition.** As of the `refactor/flatten-dashboard-category-transaction` work, this project runs **two coexisting architectures**:
+>
+> - **`auth`, `user`, `health`** still follow the module-based DDD pattern below (§ [Module Structure](#module-structure), § [Module Boundary Isolation](#module-boundary-isolation), § [Cross-Module Communication](#cross-module-communication)).
+> - **`category`, `transaction`, `dashboard`** were deliberately flattened — see § [Flat Architecture](#flat-architecture-category-transaction-dashboard) below. The module-based pattern (ports/adapters/gateways, one folder tree per bounded context) was judged **too much ceremony for this project's actual size and team**: every cross-domain read needed a port + adapter + gateway (3 files + barrel updates) to do what a direct function call does in one line, and the use-case layer added a layer of indirection between the resolver and the repository without adding real business logic.
+>
+> This is the project's current direction. New backend work on `category`, `transaction`, or `dashboard` **must** follow the flat pattern. `auth`/`user`/`health` stay as-is until (if ever) they're migrated — do not mix the two patterns within the same domain.
+
 ## Architectural Principles
 
 ### Function-First DDD (with a GraphQL exception)
@@ -61,6 +68,8 @@ There is no separate "router" or "controller" layer — TypeGraphQL resolvers ab
 
 ### Module Boundary Isolation
 
+> Applies to `auth`, `user`, `health`. `category`, `transaction`, and `dashboard` deliberately drop this boundary — see [Flat Architecture](#flat-architecture-category-transaction-dashboard).
+
 **Modules are the only isolation boundary** — direct imports between modules are **forbidden**.
 
 ```ts
@@ -100,6 +109,8 @@ mappers/user.mapper.ts         # toUserType(entity: User): UserType
 **Why:** If the entity _were_ the `@ObjectType`, every domain refactor (renaming a field, splitting a value object) would silently break the public schema — a breaking API change with no compiler signal. The mapper is the one place that translates between "what the domain needs" and "what we promise API consumers," the same role a barrel export plays between modules.
 
 ## Development Patterns
+
+> The two sections immediately below (Module Structure, and the pattern sections that follow it) describe the **legacy module-based DDD pattern**, still authoritative for `auth`, `user`, `health`. For `category`, `transaction`, `dashboard`, skip ahead to [Flat Architecture](#flat-architecture-category-transaction-dashboard).
 
 ### Module Structure
 
@@ -147,6 +158,62 @@ src/modules/<name>/
       ├── e2e/                              # End-to-end tests (full Apollo Server stack)
       └── factories/                        # Test data factories
 ```
+
+### Flat Architecture (category, transaction, dashboard)
+
+No module folders, no `index.ts` barrels, no ports/adapters/gateways, no use-case layer. Domains live as flat, top-level buckets and call each other's repositories directly — there is no isolation boundary to route around:
+
+```
+src/
+  entities/
+    category.entity.ts        # Category class + its domain errors (CategoryNotFoundError, ...), colocated
+    transaction.entity.ts     # Transaction class + TransactionKind enum + its domain errors, colocated
+  repositories/
+    category.repository.ts    # Prisma internals, returns entities — the only data-access layer
+    transaction.repository.ts
+  graphql/
+    category.types.ts         # CategoryType (@ObjectType), Create/UpdateCategoryInput (@InputType + class-validator),
+                               # CategoryIdArgs, and the toCategoryType()/toUpdateCategoryPatch() mapper functions —
+                               # one file per domain, schema shape + validation + mapping together
+    transaction.types.ts
+    dashboard.types.ts        # Read-model types only — dashboard has no entity/repository of its own,
+                               # it composes CategoryRepository + TransactionRepository
+  loaders/
+    categories-by-id.loader.ts               # buildXLoader() factories, instantiated per-request in create-context.ts
+    transactions-quantity-by-category-id.loader.ts
+  resolvers/
+    category.resolver.ts      # @Resolver() class — Query/Mutation/FieldResolver methods call repositories directly;
+    transaction.resolver.ts   # this is where the old use-case's orchestration logic now lives
+    dashboard.resolver.ts
+  __tests__/
+    unit/entity/               # Entity behavior (create/fromRepository/belongsTo)
+    unit/graphql/               # class-validator input validation + mapper functions
+    unit/loaders/                # DataLoader batching/dedup/ordering (mocked repository)
+    integration/repository/      # Real-database repository tests
+    integration/e2e/<domain>/    # Real GraphQL documents against the built schema — the primary coverage
+                                  # for resolver-level orchestration (no isolated use-case to unit-test anymore)
+```
+
+**What moved where, compared to the module pattern:**
+
+| Legacy module concept                                                     | Flat equivalent                                                                                                                                                                                                                                           |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `entity/`, `errors/`                                                      | Merged into `entities/<name>.entity.ts` — an entity and the errors it can raise are one unit                                                                                                                                                              |
+| `repository/`                                                             | `repositories/<name>.repository.ts` — unchanged responsibility, just relocated                                                                                                                                                                            |
+| `graphql/object-types`, `graphql/input-types`, `graphql/args`, `mappers/` | Merged into `graphql/<name>.types.ts` — schema shape, validation, and the entity↔type mapper live together                                                                                                                                                |
+| `use-cases/`                                                              | **Gone.** Business logic (ownership checks, orchestrating two repositories) lives directly in the resolver method. There is nothing left to unit-test in isolation once the layer is this thin — e2e tests (real schema, real DB) are the coverage for it |
+| `ports/`, `adapters/`, `gateways/`                                        | **Gone.** A resolver, loader, or another domain's repository just imports the repository it needs directly (e.g. `category.resolver.ts` imports `TransactionRepository` to reassign transactions on delete)                                               |
+| `loaders/` (per-module)                                                   | `loaders/` at the project root, one file per loader — same DataLoader-per-request rule as before                                                                                                                                                          |
+| `index.ts` barrels                                                        | **Gone.** Import the concrete file directly (`@/repositories/category.repository`, `@/graphql/category.types`) — there is no module boundary for a barrel to protect                                                                                      |
+
+**Why this is still safe:**
+
+- **Repository stays the single data-access layer.** No file outside `repositories/` calls `prisma.*` directly. This is the one boundary from the old architecture that was never overhead — it's what makes repository tests possible against a real database, and it's what a resolver mocks in a unit test if one is ever needed.
+- **Entity ≠ GraphQL type still holds.** `Category` (entity) and `CategoryType` (`@ObjectType`) are still two classes connected by `toCategoryType()` — collapsing modules didn't collapse that boundary, because it protects the public schema from internal refactors, not from other domains.
+- **No GraphQL type duplication across domains.** The old module pattern deliberately duplicated `TransactionCategoryType` next to `CategoryType` to avoid a cross-module GraphQL dependency. Flat architecture has no such dependency to avoid, so `transaction.category` field resolver returns `CategoryType` directly — one shape, one mapper, no drift between the two.
+- **DataLoader is still mandatory for relational fields** — `TransactionResolver.category` and `CategoryResolver.transactionsQuantity` are still `@FieldResolver`s backed by a per-request `DataLoader`, exactly as before. Flattening removed indirection, not the N+1 guard.
+
+**When to reach for a use-case again:** if a single resolver method's orchestration logic grows past what fits comfortably in one method (multiple repositories, several branches, logic reused by two different resolvers), extract it back into a plain function — but keep it a function in the same file or a sibling file, not a new `use-cases/` folder with its own barrel. The flat structure is a default, not a hard ceiling.
 
 ### Entity Pattern
 
@@ -418,6 +485,8 @@ All **repository tests must be integration tests** — they test against the rea
 - **Imports**: Use path aliases (`@/`). No relative imports beyond the module boundary.
 
 ## Cross-Module Communication
+
+> Applies to `auth`, `user`, `health` — modules with a real isolation boundary to cross. `category`, `transaction`, and `dashboard` have no such boundary (see [Flat Architecture](#flat-architecture-category-transaction-dashboard)): they call each other's repositories directly, no port/adapter/gateway needed.
 
 Two primary approaches for cross-module interaction — unchanged by the transport layer:
 

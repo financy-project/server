@@ -4,9 +4,9 @@ import { parseCookies, serializeCookie } from '@/shared/utils/cookies'
 import { JwtService } from '@/services/jwt.service'
 import { ACCESS_TOKEN_COOKIE_NAME } from '@/utils/constants'
 import { Environments } from '@/config/environments'
-import type { CategoryDTO } from '@/modules/transaction/ports'
-import { buildCategoriesByIdLoader } from '@/modules/transaction/loaders'
-import { buildTransactionsQuantityByCategoryIdLoader } from '@/modules/category/loaders'
+import type { Category } from '@/entities/category.entity'
+import { buildCategoriesByIdLoader } from '@/loaders/categories-by-id.loader'
+import { buildTransactionsQuantityByCategoryIdLoader } from '@/loaders/transactions-quantity-by-category-id.loader'
 
 export type CookieOptions = {
   httpOnly?: boolean
@@ -24,7 +24,7 @@ export type GraphQLContext = {
   currentUser: AuthenticatedUser | null
   locale: string
   loaders: {
-    categoriesById: DataLoader<string, CategoryDTO | null>
+    categoriesById: DataLoader<string, Category | null>
     transactionsQuantityByCategoryId: DataLoader<string, number>
   }
   cookies: {
