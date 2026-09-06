@@ -8,12 +8,9 @@ We believe in **Specification-Driven Development (SDD)**: features are defined b
 
 We value **testability, clarity, and maintainability** over cleverness. Code should be easy to reason about, and business logic should be explicit.
 
-> **Architecture in transition.** As of the `refactor/flatten-dashboard-category-transaction` work, this project runs **two coexisting architectures**:
+> **Flat architecture, project-wide.** The module-based DDD pattern documented below (§ [Module Structure](#module-structure) and everything through § [Repository Pattern](#repository-pattern)) is **historical** — kept for reference, not for new code. It was replaced, domain by domain (`category`/`transaction`/`dashboard` first, then `auth`/`user`/`health`), by the flat pattern in § [Flat Architecture](#flat-architecture) below, because it was **too much ceremony for this project's actual size and team**: every cross-domain read needed a port + adapter + gateway (3 files + barrel updates) to do what a direct function call does in one line, and the use-case layer added a layer of indirection between the resolver and the repository without adding real business logic.
 >
-> - **`auth`, `user`, `health`** still follow the module-based DDD pattern below (§ [Module Structure](#module-structure), § [Module Boundary Isolation](#module-boundary-isolation), § [Cross-Module Communication](#cross-module-communication)).
-> - **`category`, `transaction`, `dashboard`** were deliberately flattened — see § [Flat Architecture](#flat-architecture-category-transaction-dashboard) below. The module-based pattern (ports/adapters/gateways, one folder tree per bounded context) was judged **too much ceremony for this project's actual size and team**: every cross-domain read needed a port + adapter + gateway (3 files + barrel updates) to do what a direct function call does in one line, and the use-case layer added a layer of indirection between the resolver and the repository without adding real business logic.
->
-> This is the project's current direction. New backend work on `category`, `transaction`, or `dashboard` **must** follow the flat pattern. `auth`/`user`/`health` stay as-is until (if ever) they're migrated — do not mix the two patterns within the same domain.
+> **All new backend work follows the flat pattern.** There is no module boundary left anywhere in `src/` to preserve — don't reintroduce `src/modules/<name>/`, ports/adapters/gateways, or a `use-cases/` folder.
 
 ## Architectural Principles
 
@@ -68,7 +65,7 @@ There is no separate "router" or "controller" layer — TypeGraphQL resolvers ab
 
 ### Module Boundary Isolation
 
-> Applies to `auth`, `user`, `health`. `category`, `transaction`, and `dashboard` deliberately drop this boundary — see [Flat Architecture](#flat-architecture-category-transaction-dashboard).
+> Historical — no domain in this codebase uses module boundaries anymore. See [Flat Architecture](#flat-architecture).
 
 **Modules are the only isolation boundary** — direct imports between modules are **forbidden**.
 
@@ -110,7 +107,7 @@ mappers/user.mapper.ts         # toUserType(entity: User): UserType
 
 ## Development Patterns
 
-> The two sections immediately below (Module Structure, and the pattern sections that follow it) describe the **legacy module-based DDD pattern**, still authoritative for `auth`, `user`, `health`. For `category`, `transaction`, `dashboard`, skip ahead to [Flat Architecture](#flat-architecture-category-transaction-dashboard).
+> The sections immediately below (Module Structure, and the pattern sections that follow it) describe the **legacy module-based DDD pattern** — historical, not used anywhere in this codebase anymore. Skip ahead to [Flat Architecture](#flat-architecture).
 
 ### Module Structure
 
@@ -159,18 +156,25 @@ src/modules/<name>/
       └── factories/                        # Test data factories
 ```
 
-### Flat Architecture (category, transaction, dashboard)
+### Flat Architecture
 
-No module folders, no `index.ts` barrels, no ports/adapters/gateways, no use-case layer. Domains live as flat, top-level buckets and call each other's repositories directly — there is no isolation boundary to route around:
+No module folders, no `index.ts` barrels, no ports/adapters/gateways, no use-case layer. Every domain (`auth`, `user`, `health`, `category`, `transaction`, `dashboard`) lives as a flat, top-level bucket and calls another domain's repository directly — there is no isolation boundary to route around:
 
 ```
 src/
   entities/
     category.entity.ts        # Category class + its domain errors (CategoryNotFoundError, ...), colocated
     transaction.entity.ts     # Transaction class + TransactionKind enum + its domain errors, colocated
+    user.entity.ts            # User class + UserAlreadyExistsError, colocated
+    auth.entity.ts            # Auth class + InvalidCredentialsError, colocated
   repositories/
     category.repository.ts    # Prisma internals, returns entities — the only data-access layer
     transaction.repository.ts
+    user.repository.ts
+    user-with-auth.repository.ts   # The User+Auth pair operations (registration, login lookup) that touch
+                                    # both tables transactionally — not a per-domain concept, so not
+                                    # forced into either user.repository.ts or a nonexistent auth one
+    health.repository.ts
   graphql/
     category.types.ts         # CategoryType (@ObjectType), Create/UpdateCategoryInput (@InputType + class-validator),
                                # CategoryIdArgs, and the toCategoryType()/toUpdateCategoryPatch() mapper functions —
@@ -178,6 +182,10 @@ src/
     transaction.types.ts
     dashboard.types.ts        # Read-model types only — dashboard has no entity/repository of its own,
                                # it composes CategoryRepository + TransactionRepository
+    user.types.ts              # UserType, RegisterUserInput, toUserType() — also reused by auth.resolver.ts,
+                                # since login returns the same UserType as registerUser
+    auth.types.ts               # LoginInput only — login/logout have no ObjectType of their own
+    health.types.ts
   loaders/
     categories-by-id.loader.ts               # buildXLoader() factories, instantiated per-request in create-context.ts
     transactions-quantity-by-category-id.loader.ts
@@ -185,6 +193,9 @@ src/
     category.resolver.ts      # @Resolver() class — Query/Mutation/FieldResolver methods call repositories directly;
     transaction.resolver.ts   # this is where the old use-case's orchestration logic now lives
     dashboard.resolver.ts
+    user.resolver.ts
+    auth.resolver.ts
+    health.resolver.ts
   __tests__/
     unit/entity/               # Entity behavior (create/fromRepository/belongsTo)
     unit/graphql/               # class-validator input validation + mapper functions
@@ -486,7 +497,7 @@ All **repository tests must be integration tests** — they test against the rea
 
 ## Cross-Module Communication
 
-> Applies to `auth`, `user`, `health` — modules with a real isolation boundary to cross. `category`, `transaction`, and `dashboard` have no such boundary (see [Flat Architecture](#flat-architecture-category-transaction-dashboard)): they call each other's repositories directly, no port/adapter/gateway needed.
+> Historical — described a real isolation boundary the old module structure had. Nothing in this codebase has that boundary anymore (see [Flat Architecture](#flat-architecture)): every domain calls the repository it needs directly, no port/adapter/gateway needed.
 
 Two primary approaches for cross-module interaction — unchanged by the transport layer:
 
