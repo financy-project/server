@@ -216,7 +216,7 @@ describe('deleting a category reassigns its transactions (e2e)', () => {
     expect(outrosCount).toBe(1)
   })
 
-  it('deleting the default "Outros" category itself sets its transactions to null (no fallback loop)', async () => {
+  it('deleting the default "Outros" category itself → CONFLICT, its transactions are untouched', async () => {
     const user = await createUser()
     const outros = await CategoryRepository.create(
       Category.create({
@@ -243,7 +243,10 @@ describe('deleting a category reassigns its transactions (e2e)', () => {
       { contextValue: buildContext(user.id) },
     )
     if (deleteResponse.body.kind !== 'single') return
-    expect(deleteResponse.body.singleResult.errors).toBeUndefined()
+    expect(deleteResponse.body.singleResult.errors).toBeDefined()
+    expect(
+      deleteResponse.body.singleResult.errors?.[0]?.extensions?.['code'],
+    ).toBe('CONFLICT')
 
     const listResponse = await server.executeOperation(
       { query: LIST_TRANSACTIONS },
@@ -255,6 +258,6 @@ describe('deleting a category reassigns its transactions (e2e)', () => {
       listResponse.body.singleResult.data?.['listTransactions'],
       transaction.id,
     )
-    expect(edge?.node.category).toBeNull()
+    expect(edge?.node.category?.id).toBe(outros.id)
   })
 })

@@ -8,6 +8,8 @@ const translations: Record<Locale, Record<string, string>> = {
     'errors.category_not_found': 'Category not found',
     'errors.category_already_exists':
       'A category with this title already exists',
+    'errors.category_cannot_delete_default':
+      'The default "Outros" category cannot be deleted',
     'errors.transaction_not_found': 'Transaction not found',
     'errors.transaction_category_not_found':
       'The specified category was not found',
@@ -64,6 +66,8 @@ const translations: Record<Locale, Record<string, string>> = {
     'errors.invalid_credentials': 'E-mail ou senha inválidos',
     'errors.category_not_found': 'Categoria não encontrada',
     'errors.category_already_exists': 'Já existe uma categoria com este título',
+    'errors.category_cannot_delete_default':
+      'A categoria padrão "Outros" não pode ser excluída',
     'errors.transaction_not_found': 'Transação não encontrada',
     'errors.transaction_category_not_found':
       'A categoria especificada não foi encontrada',

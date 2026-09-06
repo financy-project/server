@@ -17,6 +17,14 @@ export class CategoryAlreadyExistsError extends DomainError {
   }
 }
 
+export class CannotDeleteDefaultCategoryError extends DomainError {
+  constructor(message: string = 'errors.category_cannot_delete_default') {
+    super(message, 'CONFLICT')
+    this.name = 'CannotDeleteDefaultCategoryError'
+    Object.setPrototypeOf(this, CannotDeleteDefaultCategoryError.prototype)
+  }
+}
+
 export type CategoryProps = {
   id: string
   userId: string

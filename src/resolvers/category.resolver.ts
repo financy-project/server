@@ -12,7 +12,11 @@ import {
 } from 'type-graphql'
 import type { GraphQLContext } from '@/context/create-context'
 import { requireCurrentUser, validateInput } from '@/shared/utils'
-import { Category, CategoryNotFoundError } from '@/entities/category.entity'
+import {
+  Category,
+  CategoryNotFoundError,
+  CannotDeleteDefaultCategoryError,
+} from '@/entities/category.entity'
 import { CategoryRepository } from '@/repositories/category.repository'
 import { TransactionRepository } from '@/repositories/transaction.repository'
 import {
@@ -90,24 +94,24 @@ export class CategoryResolver {
       throw new CategoryNotFoundError()
     }
 
-    // The default "Outros" category is the fallback itself — nothing to
-    // reassign its own transactions into.
-    if (category.title !== DEFAULT_CATEGORY_TITLE) {
-      const defaultCategory = await CategoryRepository.upsertByUserIdAndTitle(
-        Category.create({
-          userId,
-          title: DEFAULT_CATEGORY_TITLE,
-          description: null,
-          icon: DEFAULT_CATEGORY_ICON,
-          color: DEFAULT_CATEGORY_COLOR,
-        }),
-      )
-
-      await TransactionRepository.reassignCategory(
-        category.id,
-        defaultCategory.id,
-      )
+    if (category.title === DEFAULT_CATEGORY_TITLE) {
+      throw new CannotDeleteDefaultCategoryError()
     }
+
+    const defaultCategory = await CategoryRepository.upsertByUserIdAndTitle(
+      Category.create({
+        userId,
+        title: DEFAULT_CATEGORY_TITLE,
+        description: null,
+        icon: DEFAULT_CATEGORY_ICON,
+        color: DEFAULT_CATEGORY_COLOR,
+      }),
+    )
+
+    await TransactionRepository.reassignCategory(
+      category.id,
+      defaultCategory.id,
+    )
 
     await CategoryRepository.remove(validatedId)
     return true
